@@ -2,9 +2,14 @@
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
+    "./public/index.html"
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }
