@@ -1,0 +1,200 @@
+import { useState, useEffect } from "react";
+
+export default function CarWashApp() {
+  const [entries, setEntries] = useState([]);
+  const [form, setForm] = useState({
+    name: "",
+    location: "",
+    phone: "",
+    carModel: "",
+    numberPlate: "",
+    attendant1: "",
+    attendant2: "",
+    service: "Exterior Wash",
+    payment: "Cash",
+    amount: "",
+    notes: ""
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("carwashEntries");
+    if (saved) setEntries(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("carwashEntries", JSON.stringify(entries));
+  }, [entries]);
+
+  function handleChange(e) {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setEntries([
+      { ...form, time: new Date().toLocaleString() },
+      ...entries
+    ]);
+    setForm({ name: "", location: "", phone: "", carModel: "", numberPlate: "", attendant1: "", attendant2: "", service: "Exterior Wash", payment: "Cash", amount: "", notes: "" });
+  }
+
+  return (
+    <div className="p-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Safisha Hub</h1>
+
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-xl shadow"
+      >
+        <input
+          name="numberPlate"
+          value={form.numberPlate}
+          onChange={handleChange}
+          placeholder="Vehicle Reg No."
+          className="border p-2 rounded"
+        />
+        <input
+          name="carModel"
+          value={form.carModel}
+          onChange={handleChange}
+          placeholder="Vehicle Model"
+          className="border p-2 rounded"
+        />
+        <input
+          name="attendant1"
+          value={form.attendant1}
+          onChange={handleChange}
+          placeholder="Service Man"
+          className="border p-2 rounded"
+        />
+        <select
+          name="service"
+          value={form.service}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        >
+          <option>Exterior Wash</option>
+          <option>Interior Clean</option>
+          <option>Full Detail</option>
+          <option>Vacuum</option>
+          <option>Buffing</option>
+          <option>Engine Wash</option>
+          <option>Steam Cleaning</option>
+        </select>
+        <input
+          name="attendant2"
+          value={form.attendant2}
+          onChange={handleChange}
+          placeholder="Assisted (optional)"
+          className="border p-2 rounded"
+        />
+
+        {/* Horizontal line between second and third row */}
+        <hr className="col-span-1 md:col-span-2 border-gray-300" />
+
+        <input
+          name="name"
+          value={form.name}
+          onChange={handleChange}
+          placeholder="Customer Name"
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          name="phone"
+          value={form.phone}
+          onChange={handleChange}
+          placeholder="Phone Number"
+          className="border p-2 rounded"
+        />
+        <input
+          name="location"
+          value={form.location}
+          onChange={handleChange}
+          placeholder="House Number / Location"
+          className="border p-2 rounded"
+        />
+        <select
+          name="payment"
+          value={form.payment}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        >
+          <option>Cash</option>
+          <option>Card</option>
+          <option>Mobile Payment</option>
+        </select>
+        <input
+          name="amount"
+          value={form.amount}
+          onChange={handleChange}
+          placeholder="Amount Paid"
+          className="border p-2 rounded"
+        />
+        <input
+          name="notes"
+          value={form.notes}
+          onChange={handleChange}
+          placeholder="Notes (optional)"
+          className="border p-2 rounded col-span-1 md:col-span-2"
+        />
+
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 col-span-1 md:col-span-2"
+        >
+          Save Entry
+        </button>
+      </form>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-2">Entries</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white rounded-xl shadow">
+            <thead>
+              <tr className="bg-gray-100 text-left">
+                <th className="p-2">Time</th>
+                <th className="p-2">Name</th>
+                <th className="p-2">Location</th>
+                <th className="p-2">Phone</th>
+                <th className="p-2">Vehicle Model</th>
+                <th className="p-2">Vehicle Reg No.</th>
+                <th className="p-2">Service Man</th>
+                <th className="p-2">Assisted</th>
+                <th className="p-2">Service</th>
+                <th className="p-2">Payment</th>
+                <th className="p-2">Amount</th>
+                <th className="p-2">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry, i) => (
+                <tr key={i} className="border-t">
+                  <td className="p-2">{entry.time}</td>
+                  <td className="p-2">{entry.name}</td>
+                  <td className="p-2">{entry.location}</td>
+                  <td className="p-2">{entry.phone}</td>
+                  <td className="p-2">{entry.carModel}</td>
+                  <td className="p-2">{entry.numberPlate}</td>
+                  <td className="p-2">{entry.attendant1}</td>
+                  <td className="p-2">{entry.attendant2}</td>
+                  <td className="p-2">{entry.service}</td>
+                  <td className="p-2">{entry.payment}</td>
+                  <td className="p-2">{entry.amount}</td>
+                  <td className="p-2">{entry.notes}</td>
+                </tr>
+              ))}
+              {entries.length === 0 && (
+                <tr>
+                  <td className="p-2" colSpan={12}>
+                    No entries yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,189 @@
-# Getting Started with Create React App
+# 🚗 Safisha Hub - Car Wash Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, mobile-first car wash management application built with React and Tailwind CSS. Perfect for car wash businesses to track services, customers, and revenue.
+
+## ✨ Features
+
+- **📱 Mobile-First Design** - Optimized for mobile devices and tablets
+- **📊 Real-time Analytics** - Track daily revenue, car count, and averages
+- **🔄 Multi-Step Form** - Intuitive 3-step data entry process
+- **💾 Local Storage** - Data persists between sessions
+- **📈 Google Sheets Integration** - Automatic data backup to Google Sheets
+- **🎨 Modern UI** - Clean, professional interface with Tailwind CSS
+- **⚡ Fast Performance** - Built with React 19 for optimal speed
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd safishahub
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
+npm start
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## 📊 Google Sheets Integration
+
+### Setup Instructions
+
+1. **Create a Google Sheet:**
+   - Go to [Google Sheets](https://sheets.google.com)
+   - Create a new spreadsheet
+   - Name it "Safisha Hub Data" or similar
+
+2. **Create Google Apps Script:**
+   - In your Google Sheet, go to `Extensions > Apps Script`
+   - Delete the default code and paste the code from `src/utils/googleSheets.js` (see comments at bottom)
+   - Save the project with a name like "Safisha Hub API"
+
+3. **Deploy as Web App:**
+   - Click `Deploy > New Deployment`
+   - Choose type: `Web app`
+   - Execute as: `Me`
+   - Who has access: `Anyone`
+   - Click `Deploy`
+   - Copy the Web App URL
+
+4. **Configure Environment:**
+   - Copy `.env.example` to `.env`
+   - Replace `YOUR_SCRIPT_ID` with your Web App URL
+   ```bash
+   cp .env.example .env
+   ```
+
+5. **Test Integration:**
+   - Add a test entry in the app
+   - Check your Google Sheet for the data
+
+## 🎯 Usage
+
+### For Car Wash Assistants
+
+1. **Step 1: Vehicle Details**
+   - Enter vehicle registration number (required)
+   - Add vehicle model
+   - Set service priority (Normal/Urgent/VIP)
+
+2. **Step 2: Service Details**
+   - Select service type (auto-fills pricing)
+   - Choose service man from dropdown
+   - Optionally add an assistant
+
+3. **Step 3: Customer & Payment**
+   - Enter customer name (required)
+   - Add phone number and location
+   - Select payment method
+   - Confirm amount (auto-filled based on service)
+   - Add any notes
+
+### Dashboard Features
+
+- **Real-time Stats**: View total cars, revenue, and averages
+- **Recent Entries**: Quick view of last 5 entries
+- **Priority Indicators**: Visual tags for VIP/Urgent services
+- **Success Notifications**: Confirmation when entries are saved
+
+## 🛠️ Deployment
+
+### Netlify Deployment
+
+1. **Build the project:**
+```bash
+npm run build
+```
+
+2. **Deploy to Netlify:**
+   - Drag the `build` folder to [Netlify Drop](https://app.netlify.com/drop)
+   - Or connect your GitHub repository for automatic deployments
+
+3. **Configure Environment Variables:**
+   - In Netlify dashboard, go to Site Settings > Environment Variables
+   - Add `REACT_APP_GOOGLE_SCRIPT_URL` with your Google Apps Script URL
+
+### Manual Deployment
+
+1. Build the project: `npm run build`
+2. Upload the `build` folder contents to your web server
+3. Configure environment variables on your hosting platform
+
+## 🎨 Customization
+
+### Service Types & Pricing
+
+Edit the `servicePricing` object in `src/App.js`:
+
+```javascript
+const servicePricing = {
+  "Exterior Wash": 500,
+  "Interior Clean": 800,
+  "Full Detail": 1500,
+  // Add more services...
+};
+```
+
+### Staff Members
+
+Update the attendant options in the Step 2 form section:
+
+```javascript
+<option value="John Kamau">👨‍🔧 John Kamau</option>
+// Add more staff members...
+```
+
+### Styling
+
+The app uses Tailwind CSS. Modify classes in the JSX or extend the theme in `tailwind.config.js`.
+
+## 📱 Mobile Optimization
+
+- **Touch-friendly**: Large buttons and input fields
+- **Responsive**: Works on all screen sizes
+- **Fast**: Optimized for mobile networks
+- **Offline-capable**: Local storage ensures data isn't lost
+
+## 🔧 Technical Details
+
+- **Frontend**: React 19, Tailwind CSS
+- **State Management**: React Hooks (useState, useEffect)
+- **Storage**: localStorage + Google Sheets
+- **Build Tool**: Create React App
+- **Deployment**: Netlify-ready
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📞 Support
+
+For support or questions, please contact [your-email@example.com]
+
+---
+
+Built with ❤️ for car wash businesses everywhere!
 
 ## Available Scripts
 
