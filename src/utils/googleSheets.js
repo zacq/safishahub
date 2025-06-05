@@ -4,6 +4,50 @@
 const GOOGLE_SCRIPT_URL = process.env.REACT_APP_GOOGLE_SCRIPT_URL || '';
 
 /**
+ * Test the Google Sheets connection
+ * @returns {Promise} - Promise that resolves with connection status
+ */
+export async function testGoogleSheetsConnection() {
+  if (!GOOGLE_SCRIPT_URL) {
+    return {
+      success: false,
+      error: 'Google Script URL not configured. Please set REACT_APP_GOOGLE_SCRIPT_URL environment variable.'
+    };
+  }
+
+  try {
+    const testEntry = {
+      id: 'test_' + Date.now(),
+      time: new Date().toLocaleString(),
+      name: 'Test Customer',
+      phone: '0712345678',
+      location: 'Test Location',
+      carModel: 'Toyota Camry',
+      numberPlate: 'KCA 123T',
+      attendant1: 'Test Attendant',
+      attendant2: '',
+      service: 'Exterior Wash',
+      payment: 'Cash',
+      amount: '500',
+      notes: 'Connection test entry',
+      priority: 'Normal'
+    };
+
+    const result = await sendToGoogleSheets(testEntry);
+    return {
+      success: true,
+      message: 'Connection successful! Test entry added to Google Sheets.',
+      data: result
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Connection failed: ${error.message}`
+    };
+  }
+}
+
+/**
  * Send car wash entry data to Google Sheets
  * @param {Object} entry - The car wash entry data
  * @returns {Promise} - Promise that resolves when data is sent successfully

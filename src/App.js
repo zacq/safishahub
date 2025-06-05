@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { sendToGoogleSheets, syncWithGoogleSheets } from "./utils/googleSheets";
+import { sendToGoogleSheets, syncWithGoogleSheets, testGoogleSheetsConnection } from "./utils/googleSheets";
 
 export default function App() {
   const [entries, setEntries] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [testResult, setTestResult] = useState(null);
+  const [isTesting, setIsTesting] = useState(false);
   const [form, setForm] = useState({
     name: "",
     location: "",
@@ -109,6 +111,25 @@ export default function App() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   }
 
+  async function testConnection() {
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      const result = await testGoogleSheetsConnection();
+      setTestResult(result);
+      setTimeout(() => setTestResult(null), 5000);
+    } catch (error) {
+      setTestResult({
+        success: false,
+        error: `Test failed: ${error.message}`
+      });
+      setTimeout(() => setTestResult(null), 5000);
+    } finally {
+      setIsTesting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -122,6 +143,13 @@ export default function App() {
             <div className="text-right">
               <div className="text-sm text-gray-500">Today's Entries</div>
               <div className="text-2xl font-bold text-blue-600">{entries.length}</div>
+              <button
+                onClick={testConnection}
+                disabled={isTesting}
+                className="mt-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 disabled:opacity-50"
+              >
+                {isTesting ? "Testing..." : "Test Sheets"}
+              </button>
             </div>
           </div>
         </div>
@@ -133,6 +161,25 @@ export default function App() {
           <div className="flex items-center">
             <span className="text-xl mr-2">✅</span>
             <span>Entry saved successfully!</span>
+          </div>
+        </div>
+      )}
+
+      {/* Test Result Message */}
+      {testResult && (
+        <div className={`fixed top-20 left-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+          testResult.success ? 'bg-green-500' : 'bg-red-500'
+        } text-white`}>
+          <div className="flex items-center">
+            <span className="text-xl mr-2">{testResult.success ? '✅' : '❌'}</span>
+            <div>
+              <div className="font-semibold">
+                {testResult.success ? 'Google Sheets Connected!' : 'Connection Failed'}
+              </div>
+              <div className="text-sm opacity-90">
+                {testResult.success ? testResult.message : testResult.error}
+              </div>
+            </div>
           </div>
         </div>
       )}
