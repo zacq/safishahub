@@ -53,53 +53,74 @@ export async function testGoogleSheetsConnection() {
  * @returns {Promise} - Promise that resolves when data is sent successfully
  */
 export async function sendToGoogleSheets(entry) {
+  console.log('🔍 sendToGoogleSheets called with entry:', entry);
+  console.log('🔍 GOOGLE_SCRIPT_URL:', GOOGLE_SCRIPT_URL || 'NOT SET');
+
   if (!GOOGLE_SCRIPT_URL) {
-    console.warn('Google Script URL not configured. Data will only be stored locally.');
+    console.warn('❌ Google Script URL not configured. Data will only be stored locally.');
+    console.warn('💡 Please set REACT_APP_GOOGLE_SCRIPT_URL environment variable');
     return Promise.resolve();
   }
 
   try {
+    const requestData = {
+      action: 'addEntry',
+      data: {
+        timestamp: entry.time,
+        customerName: entry.name,
+        phoneNumber: entry.phone,
+        location: entry.location,
+        vehicleModel: entry.carModel,
+        vehicleRegNo: entry.numberPlate,
+        serviceMan: entry.attendant1,
+        assistant: entry.attendant2,
+        serviceType: entry.service,
+        paymentMethod: entry.payment,
+        amount: entry.amount,
+        notes: entry.notes,
+        priority: entry.priority,
+        entryId: entry.id
+      }
+    };
+
+    console.log('📤 Sending request to Google Sheets:', requestData);
+    console.log('🌐 Request URL:', GOOGLE_SCRIPT_URL);
+
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
       mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        action: 'addEntry',
-        data: {
-          timestamp: entry.time,
-          customerName: entry.name,
-          phoneNumber: entry.phone,
-          location: entry.location,
-          vehicleModel: entry.carModel,
-          vehicleRegNo: entry.numberPlate,
-          serviceMan: entry.attendant1,
-          assistant: entry.attendant2,
-          serviceType: entry.service,
-          paymentMethod: entry.payment,
-          amount: entry.amount,
-          notes: entry.notes,
-          priority: entry.priority,
-          entryId: entry.id
-        }
-      })
+      body: JSON.stringify(requestData)
     });
 
+    console.log('📥 Response status:', response.status);
+    console.log('📥 Response ok:', response.ok);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ HTTP error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
     }
 
     const result = await response.json();
-    
+    console.log('📥 Response data:', result);
+
     if (result.success) {
-      console.log('Data successfully sent to Google Sheets');
+      console.log('✅ Data successfully sent to Google Sheets');
       return result;
     } else {
+      console.error('❌ Google Sheets returned error:', result.error);
       throw new Error(result.error || 'Unknown error occurred');
     }
   } catch (error) {
-    console.error('Error sending data to Google Sheets:', error);
+    console.error('❌ Error sending data to Google Sheets:', error);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
