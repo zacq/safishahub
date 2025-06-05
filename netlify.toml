@@ -6,7 +6,7 @@
   publish = "build"
   
   # Node.js version
-  environment = { NODE_VERSION = "18" }
+  environment = { NODE_VERSION = "20" }
 
 [build.environment]
   # Increase memory limit for build
