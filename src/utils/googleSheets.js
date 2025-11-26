@@ -108,9 +108,8 @@ export async function syncWithGoogleSheets(localEntries) {
   try {
     // Get remote entries
     const remoteEntries = await getEntriesFromGoogleSheets();
-    
+
     // Find entries that exist locally but not remotely
-    const localIds = localEntries.map(entry => entry.id);
     const remoteIds = remoteEntries.map(entry => entry.entryId);
     
     const entriesToUpload = localEntries.filter(entry => 

@@ -46,6 +46,7 @@ export default function Records({ onNavigate }) {
     if (form.service && servicePricing[form.service]) {
       setForm(prev => ({ ...prev, amount: servicePricing[form.service].toString() }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.service]);
 
   function handleChange(e) {
