@@ -11,16 +11,31 @@ export default function Home({ onNavigate }) {
 
         {/* Navigation Buttons */}
         <div className="space-y-4">
-          {/* Records Button */}
+          {/* Carwash Records Button */}
           <button
             onClick={() => onNavigate('records')}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg p-8 transition-all transform hover:scale-105 active:scale-95"
           >
             <div className="flex items-center justify-between">
               <div className="text-left">
-                <div className="text-3xl mb-2">📝</div>
-                <h2 className="text-2xl font-bold mb-1">Records</h2>
+                <div className="text-3xl mb-2">🚿</div>
+                <h2 className="text-2xl font-bold mb-1">Carwash Records</h2>
                 <p className="text-blue-100 text-sm">Start data capture</p>
+              </div>
+              <div className="text-4xl">→</div>
+            </div>
+          </button>
+
+          {/* Lead Records Button */}
+          <button
+            onClick={() => onNavigate('autodetailing')}
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-2xl shadow-lg p-8 transition-all transform hover:scale-105 active:scale-95"
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-left">
+                <div className="text-3xl mb-2">✨</div>
+                <h2 className="text-2xl font-bold mb-1">Lead Records</h2>
+                <p className="text-teal-100 text-sm">Detailing services capture</p>
               </div>
               <div className="text-4xl">→</div>
             </div>

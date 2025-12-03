@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Home from "./components/Home";
 import Records from "./components/Records";
+import Autodetailing from "./components/Autodetailing";
 import Admin from "./components/Admin";
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
     <>
       {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
       {currentPage === 'records' && <Records onNavigate={handleNavigate} />}
+      {currentPage === 'autodetailing' && <Autodetailing onNavigate={handleNavigate} />}
       {currentPage === 'admin' && <Admin onNavigate={handleNavigate} />}
     </>
   );
