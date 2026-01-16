@@ -202,7 +202,7 @@ export const employeesService = {
     const fileName = `${employeeId}-${Date.now()}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('employee-photos')
       .upload(filePath, file);
 
