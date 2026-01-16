@@ -107,7 +107,7 @@ Once MCP is active, try these:
 
 1. Go to https://supabase.com/dashboard/account/tokens
 2. Generate a new token
-3. Update `.cursor/mcp.json` with the new token
+3. Update the MCP configuration in Augment Settings Panel
 4. Restart your IDE
 
 ## 📚 Resources

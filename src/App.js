@@ -3,6 +3,7 @@ import Home from "./components/Home";
 import Records from "./components/Records";
 import Autodetailing from "./components/Autodetailing";
 import Admin from "./components/Admin";
+import DiagnosticInfo from "./components/DiagnosticInfo";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -17,6 +18,7 @@ export default function App() {
       {currentPage === 'records' && <Records onNavigate={handleNavigate} />}
       {currentPage === 'autodetailing' && <Autodetailing onNavigate={handleNavigate} />}
       {currentPage === 'admin' && <Admin onNavigate={handleNavigate} />}
+      <DiagnosticInfo />
     </>
   );
 }
