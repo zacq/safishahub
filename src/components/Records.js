@@ -198,8 +198,9 @@ export default function Records({ onNavigate }) {
       setSelectedEmployee("");
       setSelectedServiceType("");
     } catch (error) {
-      console.error('Error saving sale:', error);
-      alert('Error saving sale. Please try again.');
+      console.error('❌ Error saving sale:', error);
+      console.error('Error details:', error.message, error);
+      alert(`Error saving sale: ${error.message || 'Please try again.'}\n\nCheck console for details.`);
     } finally {
       setLoading(false);
     }
