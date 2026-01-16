@@ -270,7 +270,12 @@ export default function Autodetailing({ onNavigate }) {
             </span>
           </h2>
 
-          {entries.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">
+              <div className="text-6xl mb-4">⏳</div>
+              <p className="text-lg">Loading leads...</p>
+            </div>
+          ) : entries.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="text-6xl mb-4">✨</div>
               <p className="text-lg">No leads yet</p>
