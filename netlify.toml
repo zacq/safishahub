@@ -1,12 +1,6 @@
 [build]
-  command = "npm run build"
+  command = "CI=false npm run build"
   publish = "build"
-
-[build.environment]
-  # These will be overridden by environment variables set in Netlify UI
-  # This is just to ensure they're available during build
-  REACT_APP_SUPABASE_URL = ""
-  REACT_APP_SUPABASE_ANON_KEY = ""
 
 [[redirects]]
   from = "/*"
