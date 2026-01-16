@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { sendToGoogleSheets } from "../utils/googleSheets";
+import { leadsService } from "../services/supabaseService";
 
 export default function Autodetailing({ onNavigate }) {
   const [entries, setEntries] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     vehicleModel: "",
     numberPlate: "",
@@ -52,14 +53,25 @@ export default function Autodetailing({ onNavigate }) {
     "Other"
   ];
 
+  // Load leads from Supabase
   useEffect(() => {
-    const saved = localStorage.getItem("leadRecords");
-    if (saved) setEntries(JSON.parse(saved));
+    loadLeads();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("leadRecords", JSON.stringify(entries));
-  }, [entries]);
+  // Load leads function
+  const loadLeads = async () => {
+    try {
+      setLoading(true);
+      console.log('🔍 Autodetailing: Loading leads from Supabase...');
+      const data = await leadsService.getAll();
+      console.log('✅ Autodetailing: Leads loaded:', data);
+      setEntries(data);
+    } catch (error) {
+      console.error('❌ Autodetailing: Error loading leads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -70,23 +82,23 @@ export default function Autodetailing({ onNavigate }) {
     setIsSubmitting(true);
 
     try {
-      // Add entry to local state
-      const newEntry = {
-        ...form,
-        timestamp: new Date().toLocaleString(),
-        date: new Date().toISOString().split('T')[0],
-        id: Date.now().toString(),
-        type: "lead"
+      // Prepare lead data for Supabase
+      const newLead = {
+        vehicle_model: form.vehicleModel,
+        number_plate: form.numberPlate,
+        customer_name: form.customerName,
+        customer_phone: form.customerPhone,
+        date: new Date().toISOString().split('T')[0]
       };
 
-      setEntries([newEntry, ...entries]);
+      console.log('💾 Autodetailing: Saving lead to Supabase...', newLead);
 
-      // Send to Google Sheets
-      try {
-        await sendToGoogleSheets(newEntry);
-      } catch (error) {
-        console.warn("Failed to send to Google Sheets, data saved locally:", error);
-      }
+      // Save to Supabase
+      const savedLead = await leadsService.create(newLead);
+      console.log('✅ Autodetailing: Lead saved successfully!', savedLead);
+
+      // Reload leads to get updated list
+      await loadLeads();
 
       // Reset form
       setForm({
@@ -100,15 +112,27 @@ export default function Autodetailing({ onNavigate }) {
       setTimeout(() => setShowSuccess(false), 3000);
 
     } catch (error) {
-      console.error("Error submitting entry:", error);
-      alert("Error saving entry. Please try again.");
+      console.error("❌ Autodetailing: Error submitting entry:", error);
+      alert(`Error saving lead: ${error.message || 'Please try again.'}\n\nCheck console for details.`);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function deleteLead(id) {
-    setEntries(entries.filter(entry => entry.id !== id));
+  async function deleteLead(id) {
+    if (!window.confirm('Are you sure you want to delete this lead?')) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Autodetailing: Deleting lead:', id);
+      await leadsService.delete(id);
+      console.log('✅ Autodetailing: Lead deleted successfully!');
+      await loadLeads();
+    } catch (error) {
+      console.error('❌ Autodetailing: Error deleting lead:', error);
+      alert('Error deleting lead. Please try again.');
+    }
   }
 
   return (
