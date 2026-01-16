@@ -10,26 +10,31 @@ import { supabase, isSupabaseConfigured } from '../config/supabase';
 export const salesService = {
   // Get all sales
   async getAll() {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       return JSON.parse(localStorage.getItem('dailySales') || '[]');
     }
 
-    const { data, error } = await supabase
-      .from('sales')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching sales:', error);
+      if (error) {
+        console.error('Error fetching sales:', error);
+        return JSON.parse(localStorage.getItem('dailySales') || '[]');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getAll sales:', error);
       return JSON.parse(localStorage.getItem('dailySales') || '[]');
     }
-
-    return data;
   },
 
   // Get sales by date
   async getByDate(date) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
       return sales.filter(s => s.date === date);
     }
@@ -50,7 +55,7 @@ export const salesService = {
 
   // Get sales by employee
   async getByEmployee(employeeName) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
       return sales.filter(s => s.employee === employeeName);
     }
@@ -71,7 +76,7 @@ export const salesService = {
 
   // Create new sale
   async create(saleData) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
       const newSale = { ...saleData, id: Date.now().toString() };
       sales.unshift(newSale);
@@ -95,7 +100,7 @@ export const salesService = {
 
   // Delete sale
   async delete(id) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
       const filtered = sales.filter(s => s.id !== id);
       localStorage.setItem('dailySales', JSON.stringify(filtered));
@@ -121,7 +126,7 @@ export const salesService = {
 export const employeesService = {
   // Get all employees
   async getAll() {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       return adminData.employees || [];
     }
@@ -141,7 +146,7 @@ export const employeesService = {
 
   // Create new employee
   async create(employeeData) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       const employees = adminData.employees || [];
       const newEmployee = { ...employeeData, id: Date.now().toString() };
@@ -167,7 +172,7 @@ export const employeesService = {
 
   // Delete employee
   async delete(id) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       adminData.employees = (adminData.employees || []).filter(e => e.id !== id);
       localStorage.setItem('adminData', JSON.stringify(adminData));
@@ -189,7 +194,7 @@ export const employeesService = {
 
   // Upload employee photo
   async uploadPhoto(file, employeeId) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       // Convert to base64 for localStorage
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -225,7 +230,7 @@ export const employeesService = {
 export const expensesService = {
   // Get all expenses
   async getAll() {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       return adminData.expenses || [];
     }
@@ -245,7 +250,7 @@ export const expensesService = {
 
   // Create new expense
   async create(expenseData) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       const expenses = adminData.expenses || [];
       const newExpense = { ...expenseData, id: Date.now().toString() };
@@ -271,7 +276,7 @@ export const expensesService = {
 
   // Delete expense
   async delete(id) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       adminData.expenses = (adminData.expenses || []).filter(e => e.id !== id);
       localStorage.setItem('adminData', JSON.stringify(adminData));
@@ -297,7 +302,7 @@ export const expensesService = {
 export const notesService = {
   // Get all notes
   async getAll() {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       return adminData.notes || [];
     }
@@ -317,7 +322,7 @@ export const notesService = {
 
   // Create new note
   async create(noteData) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       const notes = adminData.notes || [];
       const newNote = { ...noteData, id: Date.now().toString() };
@@ -343,7 +348,7 @@ export const notesService = {
 
   // Delete note
   async delete(id) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       adminData.notes = (adminData.notes || []).filter(n => n.id !== id);
       localStorage.setItem('adminData', JSON.stringify(adminData));
@@ -369,7 +374,7 @@ export const notesService = {
 export const leadsService = {
   // Get all leads
   async getAll() {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       return JSON.parse(localStorage.getItem('leadRecords') || '[]');
     }
 
@@ -388,7 +393,7 @@ export const leadsService = {
 
   // Create new lead
   async create(leadData) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const leads = JSON.parse(localStorage.getItem('leadRecords') || '[]');
       const newLead = { ...leadData, id: Date.now().toString() };
       leads.unshift(newLead);
@@ -412,7 +417,7 @@ export const leadsService = {
 
   // Delete lead
   async delete(id) {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
       const leads = JSON.parse(localStorage.getItem('leadRecords') || '[]');
       const filtered = leads.filter(l => l.id !== id);
       localStorage.setItem('leadRecords', JSON.stringify(filtered));
