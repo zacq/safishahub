@@ -71,31 +71,37 @@ export default function Records({ onNavigate }) {
 
   // Load sales from Supabase
   useEffect(() => {
+    console.log('🔍 Records: Loading sales from Supabase...');
     loadSales();
   }, []);
 
   // Load employees from Supabase
   useEffect(() => {
+    console.log('🔍 Records: Loading employees from Supabase...');
     loadEmployees();
   }, []);
 
   // Load sales function
   const loadSales = async () => {
     try {
+      console.log('📊 Records: Calling salesService.getAll()...');
       const data = await salesService.getAll();
+      console.log('✅ Records: Sales loaded:', data);
       setSales(data);
     } catch (error) {
-      console.error('Error loading sales:', error);
+      console.error('❌ Records: Error loading sales:', error);
     }
   };
 
   // Load employees function
   const loadEmployees = async () => {
     try {
+      console.log('👥 Records: Calling employeesService.getAll()...');
       const data = await employeesService.getAll();
+      console.log('✅ Records: Employees loaded:', data);
       setEmployees(data);
     } catch (error) {
-      console.error('Error loading employees:', error);
+      console.error('❌ Records: Error loading employees:', error);
     }
   };
 
@@ -163,8 +169,11 @@ export default function Records({ onNavigate }) {
         carpet_service_type: form.carpetServiceType || null
       };
 
+      console.log('💾 Records: Saving sale to Supabase...', newSale);
+
       // Save to Supabase
       const savedSale = await salesService.create(newSale);
+      console.log('✅ Records: Sale saved successfully!', savedSale);
 
       // Reload sales to get updated list
       await loadSales();

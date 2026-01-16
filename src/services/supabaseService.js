@@ -10,24 +10,31 @@ import { supabase, isSupabaseConfigured } from '../config/supabase';
 export const salesService = {
   // Get all sales
   async getAll() {
+    console.log('🔍 salesService.getAll: Checking Supabase configuration...');
+    console.log('  - isSupabaseConfigured():', isSupabaseConfigured());
+    console.log('  - supabase client exists:', !!supabase);
+
     if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ salesService.getAll: Using localStorage fallback');
       return JSON.parse(localStorage.getItem('dailySales') || '[]');
     }
 
     try {
+      console.log('📡 salesService.getAll: Fetching from Supabase...');
       const { data, error } = await supabase
         .from('sales')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching sales:', error);
+        console.error('❌ salesService.getAll: Error fetching sales:', error);
         return JSON.parse(localStorage.getItem('dailySales') || '[]');
       }
 
+      console.log('✅ salesService.getAll: Fetched', data?.length || 0, 'sales');
       return data;
     } catch (error) {
-      console.error('Error in getAll sales:', error);
+      console.error('❌ salesService.getAll: Exception:', error);
       return JSON.parse(localStorage.getItem('dailySales') || '[]');
     }
   },
@@ -76,7 +83,13 @@ export const salesService = {
 
   // Create new sale
   async create(saleData) {
+    console.log('🔍 salesService.create: Checking Supabase configuration...');
+    console.log('  - isSupabaseConfigured():', isSupabaseConfigured());
+    console.log('  - supabase client exists:', !!supabase);
+    console.log('  - Sale data:', saleData);
+
     if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ salesService.create: Using localStorage fallback');
       const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
       const newSale = { ...saleData, id: Date.now().toString() };
       sales.unshift(newSale);
@@ -84,6 +97,7 @@ export const salesService = {
       return newSale;
     }
 
+    console.log('📡 salesService.create: Inserting into Supabase...');
     const { data, error } = await supabase
       .from('sales')
       .insert([saleData])
@@ -91,10 +105,11 @@ export const salesService = {
       .single();
 
     if (error) {
-      console.error('Error creating sale:', error);
+      console.error('❌ salesService.create: Error creating sale:', error);
       throw error;
     }
 
+    console.log('✅ salesService.create: Sale created successfully!', data);
     return data;
   },
 
