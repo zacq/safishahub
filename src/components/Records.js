@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { salesService } from "../services/supabaseService";
+import { employeesService } from "../services/supabaseService";
 
 export default function Records({ onNavigate }) {
   const [sales, setSales] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [selectedServiceType, setSelectedServiceType] = useState(""); // 'Vehicle Wash', 'Motorbike Wash', 'Carpet/Rug Wash'
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     description: "",
@@ -66,25 +69,35 @@ export default function Records({ onNavigate }) {
     "Custom Size"
   ];
 
-  // Load sales from localStorage
+  // Load sales from Supabase
   useEffect(() => {
-    const saved = localStorage.getItem("dailySales");
-    if (saved) setSales(JSON.parse(saved));
+    loadSales();
   }, []);
 
-  // Save sales to localStorage
+  // Load employees from Supabase
   useEffect(() => {
-    localStorage.setItem("dailySales", JSON.stringify(sales));
-  }, [sales]);
+    loadEmployees();
+  }, []);
 
-  // Load employees from Admin data
-  useEffect(() => {
-    const savedAdminData = localStorage.getItem("adminData");
-    if (savedAdminData) {
-      const adminData = JSON.parse(savedAdminData);
-      setEmployees(adminData.employees || []);
+  // Load sales function
+  const loadSales = async () => {
+    try {
+      const data = await salesService.getAll();
+      setSales(data);
+    } catch (error) {
+      console.error('Error loading sales:', error);
     }
-  }, []);
+  };
+
+  // Load employees function
+  const loadEmployees = async () => {
+    try {
+      const data = await employeesService.getAll();
+      setEmployees(data);
+    } catch (error) {
+      console.error('Error loading employees:', error);
+    }
+  };
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -129,38 +142,58 @@ export default function Records({ onNavigate }) {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    const newSale = {
-      id: Date.now().toString(),
-      ...form,
-      // Use price field as amount for all categories
-      amount: form.price,
-      timestamp: new Date().toLocaleString()
-    };
+    try {
+      const newSale = {
+        date: form.date,
+        description: form.description || `${form.serviceType} - ${form.employee}`,
+        amount: parseFloat(form.price),
+        payment_method: form.paymentMethod,
+        category: form.category,
+        employee: form.employee,
+        service_type: form.serviceType,
+        vehicle_model: form.vehicleModel || null,
+        number_of_motorbikes: form.numberOfMotorbikes ? parseInt(form.numberOfMotorbikes) : null,
+        size: form.size || null,
+        vehicle_service_type: form.vehicleServiceType || null,
+        motorbike_service_type: form.motorbikeServiceType || null,
+        carpet_service_type: form.carpetServiceType || null
+      };
 
-    setSales([newSale, ...sales]);
+      // Save to Supabase
+      const savedSale = await salesService.create(newSale);
 
-    // Reset form and go back to employee selection
-    setForm({
-      date: new Date().toISOString().split('T')[0],
-      description: "",
-      amount: "",
-      paymentMethod: "Cash",
-      category: "",
-      employee: "",
-      serviceType: "",
-      vehicleModel: "",
-      price: "",
-      numberOfMotorbikes: "",
-      size: "",
-      vehicleServiceType: "",
-      motorbikeServiceType: "",
-      carpetServiceType: ""
-    });
-    setSelectedEmployee("");
-    setSelectedServiceType("");
+      // Reload sales to get updated list
+      await loadSales();
+
+      // Reset form and go back to employee selection
+      setForm({
+        date: new Date().toISOString().split('T')[0],
+        description: "",
+        amount: "",
+        paymentMethod: "Cash",
+        category: "",
+        employee: "",
+        serviceType: "",
+        vehicleModel: "",
+        price: "",
+        numberOfMotorbikes: "",
+        size: "",
+        vehicleServiceType: "",
+        motorbikeServiceType: "",
+        carpetServiceType: ""
+      });
+      setSelectedEmployee("");
+      setSelectedServiceType("");
+    } catch (error) {
+      console.error('Error saving sale:', error);
+      alert('Error saving sale. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Go back to employee selection
@@ -203,8 +236,18 @@ export default function Records({ onNavigate }) {
   };
 
   // Delete sale
-  const deleteSale = (id) => {
-    setSales(sales.filter(sale => sale.id !== id));
+  const deleteSale = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this sale?')) {
+      return;
+    }
+
+    try {
+      await salesService.delete(id);
+      await loadSales();
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      alert('Error deleting sale. Please try again.');
+    }
   };
 
   // Calculate total sales
@@ -560,9 +603,10 @@ export default function Records({ onNavigate }) {
 
                 <button
                   type="submit"
-                  className="w-full mt-6 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                  disabled={loading}
+                  className="w-full mt-6 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  💰 Record Sale
+                  {loading ? '⏳ Saving...' : '💰 Record Sale'}
                 </button>
               </form>
             </div>
