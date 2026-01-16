@@ -1,120 +1,220 @@
 import { useState, useEffect } from "react";
-import { sendToGoogleSheets } from "../utils/googleSheets";
 
 export default function Records({ onNavigate }) {
-  const [entries, setEntries] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [sales, setSales] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [selectedServiceType, setSelectedServiceType] = useState(""); // 'Vehicle Wash', 'Motorbike Wash', 'Carpet/Rug Wash'
   const [form, setForm] = useState({
-    name: "",
-    location: "",
-    phone: "",
-    carModel: "",
-    numberPlate: "",
-    attendant1: "",
-    attendant2: "",
-    service: "Exterior Wash",
-    payment: "Cash",
+    date: new Date().toISOString().split('T')[0],
+    description: "",
     amount: "",
-    notes: "",
-    priority: "Normal"
+    paymentMethod: "Cash",
+    category: "",
+    employee: "",
+    serviceType: "",
+    vehicleModel: "",
+    price: "",
+    numberOfMotorbikes: "",
+    size: "",
+    vehicleServiceType: "",
+    motorbikeServiceType: "",
+    carpetServiceType: ""
   });
 
-  // Service pricing
-  const servicePricing = {
-    "Exterior Wash": 500,
-    "Interior Clean": 800,
-    "Full Detail": 1500,
-    "Vacuum": 300,
-    "Buffing": 1200,
-    "Engine Wash": 600,
-    "Steam Cleaning": 1000
-  };
+  // Service types for vehicles (no prices associated)
+  const vehicleServiceTypes = [
+    "Exterior Wash",
+    "Interior Clean",
+    "Full Detail",
+    "Vacuum",
+    "Buffing",
+    "Waxing",
+    "Polish"
+  ];
 
+  // Service types for motorbikes (no prices associated)
+  const motorbikeServiceTypes = [
+    "Basic Wash",
+    "Deep Clean",
+    "Polish",
+    "Chain Lubrication",
+    "Full Detail",
+    "Engine Clean"
+  ];
+
+  // Service types for carpets/rugs (no prices associated)
+  const carpetServiceTypes = [
+    "Deep Clean",
+    "Stain Removal",
+    "Dry Cleaning",
+    "Steam Cleaning",
+    "Odor Removal",
+    "Scotchgard Protection"
+  ];
+
+  // Carpet/Rug sizes
+  const carpetSizes = [
+    "3x5",
+    "4x6",
+    "5x7",
+    "6x9",
+    "8x10",
+    "9x12",
+    "10x14",
+    "12x15",
+    "Custom Size"
+  ];
+
+  // Load sales from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("carwashEntries");
-    if (saved) setEntries(JSON.parse(saved));
+    const saved = localStorage.getItem("dailySales");
+    if (saved) setSales(JSON.parse(saved));
   }, []);
 
+  // Save sales to localStorage
   useEffect(() => {
-    localStorage.setItem("carwashEntries", JSON.stringify(entries));
-  }, [entries]);
+    localStorage.setItem("dailySales", JSON.stringify(sales));
+  }, [sales]);
 
+  // Load employees from Admin data
   useEffect(() => {
-    // Auto-fill amount based on service selection
-    if (form.service && servicePricing[form.service]) {
-      setForm(prev => ({ ...prev, amount: servicePricing[form.service].toString() }));
+    const savedAdminData = localStorage.getItem("adminData");
+    if (savedAdminData) {
+      const adminData = JSON.parse(savedAdminData);
+      setEmployees(adminData.employees || []);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.service]);
+  }, []);
 
-  function handleChange(e) {
+  // Handle form input changes
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  }
+  };
 
-  async function handleSubmit(e) {
+  // Handle employee selection
+  const handleEmployeeSelect = (employeeName) => {
+    setSelectedEmployee(employeeName);
+    setSelectedServiceType("");
+    setForm({
+      date: new Date().toISOString().split('T')[0],
+      description: "",
+      amount: "",
+      paymentMethod: "Cash",
+      category: "",
+      employee: employeeName,
+      serviceType: "",
+      vehicleModel: "",
+      price: "",
+      numberOfMotorbikes: "",
+      size: "",
+      vehicleServiceType: "",
+      motorbikeServiceType: "",
+      carpetServiceType: ""
+    });
+  };
+
+  // Handle service type selection
+  const handleServiceTypeSelect = (serviceType) => {
+    setSelectedServiceType(serviceType);
+    let category = "";
+    if (serviceType === "Vehicle Wash") category = "vehicle";
+    else if (serviceType === "Motorbike Wash") category = "motorbike";
+    else if (serviceType === "Carpet/Rug Wash") category = "carpet";
+
+    setForm({
+      ...form,
+      serviceType: serviceType,
+      category: category
+    });
+  };
+
+  // Handle form submission
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    try {
-      // Add entry to local state
-      const newEntry = {
-        ...form,
-        time: new Date().toLocaleString(),
-        id: Date.now().toString()
-      };
+    const newSale = {
+      id: Date.now().toString(),
+      ...form,
+      // Use price field as amount for all categories
+      amount: form.price,
+      timestamp: new Date().toLocaleString()
+    };
 
-      setEntries([newEntry, ...entries]);
+    setSales([newSale, ...sales]);
 
-      // Send to Google Sheets
-      try {
-        await sendToGoogleSheets(newEntry);
-      } catch (error) {
-        console.warn("Failed to send to Google Sheets, data saved locally:", error);
-      }
+    // Reset form and go back to employee selection
+    setForm({
+      date: new Date().toISOString().split('T')[0],
+      description: "",
+      amount: "",
+      paymentMethod: "Cash",
+      category: "",
+      employee: "",
+      serviceType: "",
+      vehicleModel: "",
+      price: "",
+      numberOfMotorbikes: "",
+      size: "",
+      vehicleServiceType: "",
+      motorbikeServiceType: "",
+      carpetServiceType: ""
+    });
+    setSelectedEmployee("");
+    setSelectedServiceType("");
+  };
 
-      // Reset form
-      setForm({
-        name: "",
-        location: "",
-        phone: "",
-        carModel: "",
-        numberPlate: "",
-        attendant1: "",
-        attendant2: "",
-        service: "Exterior Wash",
-        payment: "Cash",
-        amount: "",
-        notes: "",
-        priority: "Normal"
-      });
+  // Go back to employee selection
+  const goBackToEmployeeSelection = () => {
+    setSelectedEmployee("");
+    setSelectedServiceType("");
+    setForm({
+      date: new Date().toISOString().split('T')[0],
+      description: "",
+      amount: "",
+      paymentMethod: "Cash",
+      category: "",
+      employee: "",
+      serviceType: "",
+      vehicleModel: "",
+      price: "",
+      numberOfMotorbikes: "",
+      size: "",
+      vehicleServiceType: "",
+      motorbikeServiceType: "",
+      carpetServiceType: ""
+    });
+  };
 
-      setCurrentStep(1);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+  // Go back to service type selection
+  const goBackToServiceTypeSelection = () => {
+    setSelectedServiceType("");
+    setForm({
+      ...form,
+      serviceType: "",
+      category: "",
+      vehicleModel: "",
+      price: "",
+      numberOfMotorbikes: "",
+      size: "",
+      vehicleServiceType: "",
+      motorbikeServiceType: "",
+      carpetServiceType: ""
+    });
+  };
 
-    } catch (error) {
-      console.error("Error submitting entry:", error);
-      alert("Error saving entry. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  // Delete sale
+  const deleteSale = (id) => {
+    setSales(sales.filter(sale => sale.id !== id));
+  };
 
-  function nextStep() {
-    setCurrentStep(prev => Math.min(prev + 1, 3));
-  }
-
-  function prevStep() {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  }
+  // Calculate total sales
+  const totalSales = sales.reduce((sum, sale) => sum + parseFloat(sale.amount || 0), 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <div className="bg-white shadow-lg">
-        <div className="max-w-md mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <button
@@ -124,393 +224,436 @@ export default function Records({ onNavigate }) {
                 ←
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">🚗 Safisha Hub</h1>
-                <p className="text-sm text-gray-600">Car Wash Management</p>
+                <h1 className="text-2xl font-bold text-gray-800">💰 Daily Sales</h1>
+                <p className="text-sm text-gray-600">Record Daily Transactions</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500">Today's Entries</div>
-              <div className="text-2xl font-bold text-blue-600">{entries.length}</div>
+              <div className="text-sm text-gray-500">Total Sales</div>
+              <div className="text-2xl font-bold text-green-600">KSh {totalSales.toLocaleString()}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="fixed top-20 left-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg animate-pulse">
-          <div className="flex items-center">
-            <span className="text-xl mr-2">✅</span>
-            <span>Entry saved successfully!</span>
-          </div>
-        </div>
-      )}
+      <div className="max-w-4xl mx-auto p-4">
+        {/* Employee Selection, Service Type Selection, or Form */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          {!selectedEmployee ? (
+            // Step 1: Employee Selection
+            <div>
+              <h2 className="text-xl font-semibold mb-6 text-center">
+                👨‍🔧 Select Employee
+              </h2>
 
-      <div className="max-w-md mx-auto p-4">
-        {/* Progress Indicator */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Step {currentStep} of 3</span>
-            <span className="text-sm text-gray-500">{Math.round((currentStep / 3) * 100)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 3) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Vehicle Information */}
-          {currentStep === 1 && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">🚙 Vehicle Details</h2>
-                <p className="text-sm text-gray-600">Enter vehicle information</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vehicle Registration Number *
-                  </label>
-                  <input
-                    name="numberPlate"
-                    value={form.numberPlate}
-                    onChange={handleChange}
-                    placeholder="e.g., KCA 123A"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg font-mono uppercase"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vehicle Model
-                  </label>
-                  <input
-                    name="carModel"
-                    value={form.carModel}
-                    onChange={handleChange}
-                    placeholder="e.g., Toyota Camry, Honda Civic"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Priority
-                  </label>
-                  <select
-                    name="priority"
-                    value={form.priority}
-                    onChange={handleChange}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+              {employees.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">⚠️</div>
+                  <p className="text-gray-600 mb-4">No employees added yet</p>
+                  <button
+                    onClick={() => onNavigate('admin')}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                   >
-                    <option value="Normal">🟢 Normal</option>
-                    <option value="Urgent">🟡 Urgent</option>
-                    <option value="VIP">🔴 VIP</option>
-                  </select>
+                    Go to Admin Panel to Add Employees
+                  </button>
                 </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={nextStep}
-                className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors"
-              >
-                Next: Service Details →
-              </button>
-            </div>
-          )}
-
-          {/* Step 2: Service Information */}
-          {currentStep === 2 && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">🧽 Service Details</h2>
-                <p className="text-sm text-gray-600">Select service and staff</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Type *
-                  </label>
-                  <select
-                    name="service"
-                    value={form.service}
-                    onChange={handleChange}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                    required
-                  >
-                    <option value="Exterior Wash">🚿 Exterior Wash - KSh 500</option>
-                    <option value="Interior Clean">🧹 Interior Clean - KSh 800</option>
-                    <option value="Full Detail">✨ Full Detail - KSh 1,500</option>
-                    <option value="Vacuum">🌪️ Vacuum - KSh 300</option>
-                    <option value="Buffing">💎 Buffing - KSh 1,200</option>
-                    <option value="Engine Wash">🔧 Engine Wash - KSh 600</option>
-                    <option value="Steam Cleaning">💨 Steam Cleaning - KSh 1,000</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Man *
-                  </label>
-                  <select
-                    name="attendant1"
-                    value={form.attendant1}
-                    onChange={handleChange}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                    required
-                  >
-                    <option value="">Select Service Man</option>
-                    <option value="John Kamau">👨‍🔧 John Kamau</option>
-                    <option value="Peter Mwangi">👨‍🔧 Peter Mwangi</option>
-                    <option value="Mary Wanjiku">👩‍🔧 Mary Wanjiku</option>
-                    <option value="David Kiprotich">👨‍🔧 David Kiprotich</option>
-                    <option value="Grace Akinyi">👩‍🔧 Grace Akinyi</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assistant (Optional)
-                  </label>
-                  <select
-                    name="attendant2"
-                    value={form.attendant2}
-                    onChange={handleChange}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">No Assistant</option>
-                    <option value="John Kamau">👨‍🔧 John Kamau</option>
-                    <option value="Peter Mwangi">👨‍🔧 Peter Mwangi</option>
-                    <option value="Mary Wanjiku">👩‍🔧 Mary Wanjiku</option>
-                    <option value="David Kiprotich">👨‍🔧 David Kiprotich</option>
-                    <option value="Grace Akinyi">👩‍🔧 Grace Akinyi</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Next: Customer →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Customer & Payment */}
-          {currentStep === 3 && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">👤 Customer & Payment</h2>
-                <p className="text-sm text-gray-600">Complete the transaction</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer Name *
-                  </label>
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Enter customer name"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    placeholder="e.g., 0712345678"
-                    type="tel"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <input
-                    name="location"
-                    value={form.location}
-                    onChange={handleChange}
-                    placeholder="House number or area"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Payment Method *
-                    </label>
-                    <select
-                      name="payment"
-                      value={form.payment}
-                      onChange={handleChange}
-                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                      required
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {employees.map((emp) => (
+                    <button
+                      key={emp.id}
+                      onClick={() => handleEmployeeSelect(emp.name)}
+                      className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl p-6 transition-all transform hover:scale-105 active:scale-95 shadow-lg text-left"
                     >
-                      <option value="Cash">💵 Cash</option>
-                      <option value="M-Pesa">📱 M-Pesa</option>
-                      <option value="Card">💳 Card</option>
-                      <option value="Bank Transfer">🏦 Bank Transfer</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Amount (KSh) *
-                    </label>
-                    <input
-                      name="amount"
-                      value={form.amount}
-                      onChange={handleChange}
-                      placeholder="0"
-                      type="number"
-                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg font-semibold"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleChange}
-                    placeholder="Any special instructions or notes..."
-                    rows="3"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 bg-green-600 text-white py-4 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? "Saving..." : "💾 Save Entry"}
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
-
-        {/* Recent Entries */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            📋 Recent Entries
-            <span className="ml-2 bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
-              {entries.length}
-            </span>
-          </h2>
-
-          {entries.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">🚗</div>
-              <p>No entries yet. Add your first car wash entry!</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {entries.slice(0, 5).map((entry, i) => (
-                <div key={entry.id || i} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-semibold text-gray-800">{entry.numberPlate}</div>
-                      <div className="text-sm text-gray-600">{entry.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-green-600">KSh {entry.amount}</div>
-                      <div className="text-xs text-gray-500">{entry.time}</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>{entry.service}</span>
-                    <span>{entry.attendant1}</span>
-                  </div>
-                  {entry.priority !== "Normal" && (
-                    <div className="mt-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        entry.priority === "VIP" ? "bg-red-100 text-red-800" :
-                        entry.priority === "Urgent" ? "bg-yellow-100 text-yellow-800" :
-                        "bg-green-100 text-green-800"
-                      }`}>
-                        {entry.priority}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {entries.length > 5 && (
-                <div className="text-center text-sm text-gray-500 py-2">
-                  ... and {entries.length - 5} more entries
+                      <div className="flex items-center gap-3">
+                        <div className="text-4xl">👨‍🔧</div>
+                        <div>
+                          <h3 className="text-xl font-bold">{emp.name}</h3>
+                          <p className="text-green-100 text-sm">📱 {emp.phone}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
+          ) : !selectedServiceType ? (
+            // Step 2: Service Type Selection
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  👨‍🔧 {selectedEmployee} - Select Service Type
+                </h2>
+                <button
+                  onClick={goBackToEmployeeSelection}
+                  className="text-gray-600 hover:text-gray-800 text-sm flex items-center gap-1"
+                >
+                  ← Change Employee
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                {/* Vehicle Wash Button */}
+                <button
+                  onClick={() => handleServiceTypeSelect('Vehicle Wash')}
+                  className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl p-8 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  <div className="text-5xl mb-3">🚗</div>
+                  <h3 className="text-2xl font-bold mb-1">Vehicle Wash</h3>
+                  <p className="text-blue-100 text-sm">Cars, SUVs, Vans</p>
+                </button>
+
+                {/* Motorbike Wash Button */}
+                <button
+                  onClick={() => handleServiceTypeSelect('Motorbike Wash')}
+                  className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl p-8 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  <div className="text-5xl mb-3">🏍️</div>
+                  <h3 className="text-2xl font-bold mb-1">Motorbike Wash</h3>
+                  <p className="text-orange-100 text-sm">Motorcycles, Bikes</p>
+                </button>
+
+                {/* Carpet/Rug Wash Button */}
+                <button
+                  onClick={() => handleServiceTypeSelect('Carpet/Rug Wash')}
+                  className="bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-2xl p-8 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  <div className="text-5xl mb-3">🧺</div>
+                  <h3 className="text-2xl font-bold mb-1">Carpet/Rug Wash</h3>
+                  <p className="text-purple-100 text-sm">Carpets, Rugs, Mats</p>
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Step 3: Sale Entry Form
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  {form.category === 'vehicle' && '🚗 Vehicle Wash'}
+                  {form.category === 'motorbike' && '🏍️ Motorbike Wash'}
+                  {form.category === 'carpet' && '🧺 Carpet/Rug Wash'}
+                  <span className="text-sm font-normal text-gray-600">- {selectedEmployee}</span>
+                </h2>
+                <button
+                  onClick={goBackToServiceTypeSelection}
+                  className="text-gray-600 hover:text-gray-800 text-sm flex items-center gap-1"
+                >
+                  ← Change Service Type
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  {/* Common Fields */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date *
+                      </label>
+                      <input
+                        type="date"
+                        name="date"
+                        value={form.date}
+                        onChange={handleChange}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Payment Method *
+                      </label>
+                      <select
+                        name="paymentMethod"
+                        value={form.paymentMethod}
+                        onChange={handleChange}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                        required
+                      >
+                        <option value="Cash">💵 Cash</option>
+                        <option value="M-Pesa">📱 M-Pesa</option>
+                        <option value="Card">💳 Card</option>
+                        <option value="Bank Transfer">🏦 Bank Transfer</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Vehicle-Specific Fields */}
+                  {form.category === 'vehicle' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Vehicle Service Type *
+                        </label>
+                        <select
+                          name="vehicleServiceType"
+                          value={form.vehicleServiceType}
+                          onChange={handleChange}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        >
+                          <option value="">Select Service Type</option>
+                          {vehicleServiceTypes.map((service) => (
+                            <option key={service} value={service}>
+                              {service}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Vehicle Model *
+                        </label>
+                        <input
+                          type="text"
+                          name="vehicleModel"
+                          value={form.vehicleModel}
+                          onChange={handleChange}
+                          placeholder="e.g., Toyota Camry, Honda Civic"
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Price (KSh) *
+                        </label>
+                        <input
+                          type="number"
+                          name="price"
+                          value={form.price}
+                          onChange={handleChange}
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Motorbike-Specific Fields */}
+                  {form.category === 'motorbike' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Motorbike Service Type *
+                        </label>
+                        <select
+                          name="motorbikeServiceType"
+                          value={form.motorbikeServiceType}
+                          onChange={handleChange}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        >
+                          <option value="">Select Service Type</option>
+                          {motorbikeServiceTypes.map((service) => (
+                            <option key={service} value={service}>
+                              {service}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Number of Motorbikes *
+                        </label>
+                        <input
+                          type="number"
+                          name="numberOfMotorbikes"
+                          value={form.numberOfMotorbikes}
+                          onChange={handleChange}
+                          placeholder="0"
+                          min="1"
+                          step="1"
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Price (KSh) *
+                        </label>
+                        <input
+                          type="number"
+                          name="price"
+                          value={form.price}
+                          onChange={handleChange}
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Carpet-Specific Fields */}
+                  {form.category === 'carpet' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Carpet Service Type *
+                        </label>
+                        <select
+                          name="carpetServiceType"
+                          value={form.carpetServiceType}
+                          onChange={handleChange}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        >
+                          <option value="">Select Service Type</option>
+                          {carpetServiceTypes.map((service) => (
+                            <option key={service} value={service}>
+                              {service}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Size *
+                        </label>
+                        <select
+                          name="size"
+                          value={form.size}
+                          onChange={handleChange}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        >
+                          <option value="">Select Size</option>
+                          {carpetSizes.map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Price (KSh) *
+                        </label>
+                        <input
+                          type="number"
+                          name="price"
+                          value={form.price}
+                          onChange={handleChange}
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full mt-6 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                >
+                  💰 Record Sale
+                </button>
+              </form>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Quick Stats Footer */}
-      <div className="bg-white border-t mt-8 p-4">
-        <div className="max-w-md mx-auto grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-blue-600">{entries.length}</div>
-            <div className="text-xs text-gray-600">Total Cars</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-green-600">
-              {entries.reduce((sum, entry) => sum + (parseInt(entry.amount) || 0), 0).toLocaleString()}
+        {/* Sales List */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center justify-between">
+            <span>📊 Sales History</span>
+            <span className="text-sm text-gray-500">{sales.length} entries</span>
+          </h2>
+
+          {sales.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">💰</div>
+              <p>No sales recorded yet. Add your first sale above!</p>
             </div>
-            <div className="text-xs text-gray-600">Total Revenue (KSh)</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-600">
-              {entries.length > 0 ? Math.round(entries.reduce((sum, entry) => sum + (parseInt(entry.amount) || 0), 0) / entries.length) : 0}
+          ) : (
+            <div className="space-y-3">
+              {sales.map((sale) => (
+                <div key={sale.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-3 flex-1">
+                    {/* Category Icon */}
+                    <div className="text-3xl">
+                      {sale.category === 'vehicle' && '🚗'}
+                      {sale.category === 'motorbike' && '🏍️'}
+                      {sale.category === 'carpet' && '🧺'}
+                    </div>
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-semibold text-gray-800">
+                          {sale.category === 'vehicle' ? sale.vehicleModel :
+                           sale.category === 'motorbike' ? `${sale.numberOfMotorbikes} Motorbike${sale.numberOfMotorbikes > 1 ? 's' : ''}` :
+                           sale.category === 'carpet' ? `${sale.size} Carpet/Rug` :
+                           sale.description}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          sale.category === 'vehicle' ? 'bg-blue-100 text-blue-800' :
+                          sale.category === 'motorbike' ? 'bg-orange-100 text-orange-800' :
+                          'bg-purple-100 text-purple-800'
+                        }`}>
+                          {sale.category === 'vehicle' ? 'Vehicle' :
+                           sale.category === 'motorbike' ? 'Motorbike' :
+                           'Carpet/Rug'}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          sale.paymentMethod === "Cash" ? "bg-green-100 text-green-800" :
+                          sale.paymentMethod === "M-Pesa" ? "bg-blue-100 text-blue-800" :
+                          sale.paymentMethod === "Card" ? "bg-purple-100 text-purple-800" :
+                          "bg-orange-100 text-orange-800"
+                        }`}>
+                          {sale.paymentMethod}
+                        </span>
+                      </div>
+
+                      {/* Service details */}
+                      <div className="text-sm text-gray-600 mb-1">
+                        👨‍🔧 {sale.employee} • 🧽 {sale.serviceType}
+                        {sale.category === 'vehicle' && sale.vehicleServiceType && ` • ${sale.vehicleServiceType}`}
+                        {sale.category === 'motorbike' && sale.motorbikeServiceType && ` • ${sale.motorbikeServiceType}`}
+                        {sale.category === 'carpet' && sale.carpetServiceType && ` • ${sale.carpetServiceType}`}
+                      </div>
+
+                      <div className="text-sm text-gray-600">
+                        📅 {new Date(sale.date).toLocaleDateString()} • 🕒 {sale.timestamp}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-green-600">
+                        KSh {parseFloat(sale.amount).toLocaleString()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deleteSale(sale.id)}
+                      className="text-red-500 hover:text-red-700 text-2xl"
+                      title="Delete sale"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="text-xs text-gray-600">Avg. per Car (KSh)</div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

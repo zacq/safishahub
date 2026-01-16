@@ -5,69 +5,64 @@ export default function Autodetailing({ onNavigate }) {
   const [entries, setEntries] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState({
-    name: "",
-    location: "",
-    phone: "",
-    carModel: "",
+    vehicleModel: "",
     numberPlate: "",
-    selectedServices: [],
-    payment: "Cash",
-    amount: "",
-    notes: "",
-    priority: "Normal"
+    customerName: "",
+    customerPhone: ""
   });
 
-  // Available detailing services (no pricing)
-  const availableServices = [
-    "Paint Correction",
-    "Ceramic Coating",
-    "Full Detailing",
-    "Interior Detailing",
-    "Headlight Restoration",
-    "Scratch Removal",
-    "Leather Treatment",
-    "Engine Bay Detailing",
-    "Upholstery Cleaning",
-    "Odor Removal",
-    "Window Tinting",
-    "Number Plate Replacement",
-    "Insurance Services",
-    "Oil Change",
-    "Add Ons"
+  // Vehicle models dropdown list
+  const vehicleModels = [
+    "Toyota Corolla",
+    "Toyota Camry",
+    "Toyota RAV4",
+    "Toyota Land Cruiser",
+    "Toyota Hilux",
+    "Toyota Prado",
+    "Honda Civic",
+    "Honda Accord",
+    "Honda CR-V",
+    "Honda Fit",
+    "Nissan X-Trail",
+    "Nissan Patrol",
+    "Nissan Note",
+    "Mazda Demio",
+    "Mazda Axela",
+    "Mazda CX-5",
+    "Subaru Impreza",
+    "Subaru Forester",
+    "Subaru Outback",
+    "Mitsubishi Outlander",
+    "Mitsubishi Pajero",
+    "Mercedes-Benz C-Class",
+    "Mercedes-Benz E-Class",
+    "BMW 3 Series",
+    "BMW 5 Series",
+    "BMW X5",
+    "Audi A4",
+    "Audi Q5",
+    "Volkswagen Golf",
+    "Volkswagen Passat",
+    "Range Rover Sport",
+    "Range Rover Evoque",
+    "Land Rover Discovery",
+    "Peugeot 3008",
+    "Peugeot 5008",
+    "Other"
   ];
 
   useEffect(() => {
-    const saved = localStorage.getItem("autodetailingEntries");
+    const saved = localStorage.getItem("leadRecords");
     if (saved) setEntries(JSON.parse(saved));
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("autodetailingEntries", JSON.stringify(entries));
+    localStorage.setItem("leadRecords", JSON.stringify(entries));
   }, [entries]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  function handleServiceSelect(e) {
-    const service = e.target.value;
-    if (service && !form.selectedServices.includes(service)) {
-      setForm({
-        ...form,
-        selectedServices: [...form.selectedServices, service]
-      });
-      // Reset the dropdown
-      e.target.value = "";
-    }
-  }
-
-  function removeService(service) {
-    setForm({
-      ...form,
-      selectedServices: form.selectedServices.filter(s => s !== service)
-    });
   }
 
   async function handleSubmit(e) {
@@ -78,9 +73,10 @@ export default function Autodetailing({ onNavigate }) {
       // Add entry to local state
       const newEntry = {
         ...form,
-        time: new Date().toLocaleString(),
+        timestamp: new Date().toLocaleString(),
+        date: new Date().toISOString().split('T')[0],
         id: Date.now().toString(),
-        type: "autodetailing"
+        type: "lead"
       };
 
       setEntries([newEntry, ...entries]);
@@ -94,19 +90,12 @@ export default function Autodetailing({ onNavigate }) {
 
       // Reset form
       setForm({
-        name: "",
-        location: "",
-        phone: "",
-        carModel: "",
+        vehicleModel: "",
         numberPlate: "",
-        selectedServices: [],
-        payment: "Cash",
-        amount: "",
-        notes: "",
-        priority: "Normal"
+        customerName: "",
+        customerPhone: ""
       });
 
-      setCurrentStep(1);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
 
@@ -118,19 +107,15 @@ export default function Autodetailing({ onNavigate }) {
     }
   }
 
-  function nextStep() {
-    setCurrentStep(prev => Math.min(prev + 1, 3));
-  }
-
-  function prevStep() {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+  function deleteLead(id) {
+    setEntries(entries.filter(entry => entry.id !== id));
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100">
       {/* Header */}
       <div className="bg-white shadow-lg">
-        <div className="max-w-md mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <button
@@ -141,11 +126,11 @@ export default function Autodetailing({ onNavigate }) {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">✨ Lead Records</h1>
-                <p className="text-sm text-gray-600">Detailing Lead Capture</p>
+                <p className="text-sm text-gray-600">Capture Customer Leads</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500">Today's Entries</div>
+              <div className="text-sm text-gray-500">Total Leads</div>
               <div className="text-2xl font-bold text-teal-600">{entries.length}</div>
             </div>
           </div>
@@ -155,350 +140,161 @@ export default function Autodetailing({ onNavigate }) {
       {/* Success Message */}
       {showSuccess && (
         <div className="fixed top-20 left-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg animate-pulse">
-          <div className="flex items-center">
+          <div className="flex items-center justify-center">
             <span className="text-xl mr-2">✅</span>
-            <span>Entry saved successfully!</span>
+            <span>Lead saved successfully!</span>
           </div>
         </div>
       )}
 
-      <div className="max-w-md mx-auto p-4">
-        {/* Progress Indicator */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Step {currentStep} of 3</span>
-            <span className="text-sm text-gray-500">{Math.round((currentStep / 3) * 100)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-teal-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 3) * 100}%` }}
-            ></div>
-          </div>
+      <div className="max-w-4xl mx-auto p-4">
+        {/* Lead Entry Form */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-6 text-center">📝 New Lead Entry</h2>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Vehicle Model */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vehicle Model *
+                </label>
+                <select
+                  name="vehicleModel"
+                  value={form.vehicleModel}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                  required
+                >
+                  <option value="">Select Vehicle Model</option>
+                  {vehicleModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Vehicle Registration Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vehicle Reg No *
+                </label>
+                <input
+                  type="text"
+                  name="numberPlate"
+                  value={form.numberPlate}
+                  onChange={handleChange}
+                  placeholder="e.g., KCA 123A"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none font-mono uppercase"
+                  required
+                />
+              </div>
+
+              {/* Customer Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Name *
+                </label>
+                <input
+                  type="text"
+                  name="customerName"
+                  value={form.customerName}
+                  onChange={handleChange}
+                  placeholder="Enter customer name"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              {/* Customer Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Phone *
+                </label>
+                <input
+                  type="tel"
+                  name="customerPhone"
+                  value={form.customerPhone}
+                  onChange={handleChange}
+                  placeholder="e.g., 0712345678"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full mt-6 bg-teal-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Saving..." : "💾 Save Lead"}
+            </button>
+          </form>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Vehicle Information */}
-          {currentStep === 1 && (
-            <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
-              <div className="text-center mb-3">
-                <h2 className="text-lg font-semibold text-gray-800">🚙 Vehicle Details</h2>
-                <p className="text-xs text-gray-600">Enter vehicle information</p>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Vehicle Registration Number *
-                  </label>
-                  <input
-                    name="numberPlate"
-                    value={form.numberPlate}
-                    onChange={handleChange}
-                    placeholder="e.g., KCA 123A"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none font-mono uppercase"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Vehicle Model
-                  </label>
-                  <input
-                    name="carModel"
-                    value={form.carModel}
-                    onChange={handleChange}
-                    placeholder="e.g., Toyota Camry, Honda Civic"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Service Priority
-                  </label>
-                  <select
-                    name="priority"
-                    value={form.priority}
-                    onChange={handleChange}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none"
-                  >
-                    <option value="Normal">🟢 Normal</option>
-                    <option value="Urgent">🟡 Urgent</option>
-                    <option value="VIP">🔴 VIP</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={nextStep}
-                className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition-colors"
-              >
-                Next: Service Details →
-              </button>
-            </div>
-          )}
-
-          {/* Step 2: Service Selection */}
-          {currentStep === 2 && (
-            <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
-              <div className="text-center mb-3">
-                <h2 className="text-lg font-semibold text-gray-800">✨ Service Needs</h2>
-                <p className="text-xs text-gray-600">Select all services the customer needs</p>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Select Service to Add
-                  </label>
-                  <select
-                    onChange={handleServiceSelect}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Choose a service...</option>
-                    {availableServices
-                      .filter(service => !form.selectedServices.includes(service))
-                      .map((service) => (
-                        <option key={service} value={service}>
-                          {service}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {/* Selected Services */}
-                {form.selectedServices.length > 0 && (
-                  <div className="mt-3">
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Selected Services ({form.selectedServices.length})
-                    </label>
-                    <div className="space-y-2">
-                      {form.selectedServices.map((service) => (
-                        <div
-                          key={service}
-                          className="flex items-center justify-between p-2 bg-teal-50 border-2 border-teal-200 rounded-xl"
-                        >
-                          <span className="text-sm font-medium text-teal-900">{service}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeService(service)}
-                            className="text-red-600 hover:text-red-800 font-bold text-xl"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={form.selectedServices.length === 0}
-                  className="flex-1 bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next: Customer →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Customer Information */}
-          {currentStep === 3 && (
-            <div className="bg-white rounded-2xl shadow-lg p-4 space-y-3">
-              <div className="text-center mb-3">
-                <h2 className="text-lg font-semibold text-gray-800">👤 Customer Information</h2>
-                <p className="text-xs text-gray-600">Capture lead contact details</p>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Customer Name *
-                  </label>
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Enter customer name"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    placeholder="e.g., 0712345678"
-                    type="tel"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Location
-                  </label>
-                  <input
-                    name="location"
-                    value={form.location}
-                    onChange={handleChange}
-                    placeholder="House number or area"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleChange}
-                    placeholder="Any additional information about the lead..."
-                    rows="2"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none resize-none"
-                  />
-                </div>
-
-                {/* Summary of Selected Services */}
-                <div className="bg-teal-50 border-2 border-teal-200 rounded-xl p-3">
-                  <div className="text-xs font-medium text-gray-700 mb-2">Service Needs:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {form.selectedServices.map((service) => (
-                      <span
-                        key={service}
-                        className="bg-teal-600 text-white px-2 py-1 rounded-full text-xs"
-                      >
-                        {service}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? "Saving..." : "💾 Save Lead"}
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
-
-        {/* Recent Entries */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            📋 Recent Leads
-            <span className="ml-2 bg-teal-100 text-teal-800 text-sm px-2 py-1 rounded-full">
-              {entries.length}
+        {/* Leads List */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center justify-between">
+            <span className="flex items-center">
+              📋 All Leads
+              <span className="ml-2 bg-teal-100 text-teal-800 text-sm px-3 py-1 rounded-full">
+                {entries.length}
+              </span>
             </span>
           </h2>
 
           {entries.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">✨</div>
-              <p>No leads yet. Add your first detailing lead!</p>
+            <div className="text-center py-12 text-gray-500">
+              <div className="text-6xl mb-4">✨</div>
+              <p className="text-lg">No leads yet</p>
+              <p className="text-sm">Add your first lead using the form above</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {entries.slice(0, 5).map((entry, i) => (
-                <div key={entry.id || i} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-semibold text-gray-800">{entry.numberPlate}</div>
-                      <div className="text-sm text-gray-600">{entry.name}</div>
-                      <div className="text-xs text-gray-500">{entry.phone}</div>
+            <div className="space-y-3">
+              {entries.map((entry) => (
+                <div key={entry.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-teal-300 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-teal-100 text-teal-800 px-3 py-1 rounded-lg font-mono font-bold text-sm">
+                          {entry.numberPlate}
+                        </div>
+                        <div className="text-gray-600 text-sm">
+                          {entry.vehicleModel}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-500">👤 </span>
+                          <span className="font-medium text-gray-800">{entry.customerName}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">📱 </span>
+                          <span className="text-gray-700">{entry.customerPhone}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-gray-500 mt-2">
+                        📅 {entry.timestamp}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-gray-500">{entry.time}</div>
-                      {entry.priority !== "Normal" && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          entry.priority === "VIP" ? "bg-red-100 text-red-800" :
-                          entry.priority === "Urgent" ? "bg-yellow-100 text-yellow-800" :
-                          "bg-green-100 text-green-800"
-                        }`}>
-                          {entry.priority}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-xs text-gray-500 mb-1">Service Needs:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {entry.selectedServices && entry.selectedServices.map((service, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-teal-100 text-teal-800 px-2 py-0.5 rounded text-xs"
-                        >
-                          {service}
-                        </span>
-                      ))}
-                    </div>
+
+                    <button
+                      onClick={() => deleteLead(entry.id)}
+                      className="text-red-500 hover:text-red-700 text-2xl ml-4"
+                      title="Delete lead"
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
               ))}
-              {entries.length > 5 && (
-                <div className="text-center text-sm text-gray-500 py-2">
-                  ... and {entries.length - 5} more leads
-                </div>
-              )}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Quick Stats Footer */}
-      <div className="bg-white border-t mt-8 p-4">
-        <div className="max-w-md mx-auto grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-teal-600">{entries.length}</div>
-            <div className="text-xs text-gray-600">Total Leads</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-600">
-              {entries.filter(e => e.priority === "VIP").length}
-            </div>
-            <div className="text-xs text-gray-600">VIP Leads</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-yellow-600">
-              {entries.filter(e => e.priority === "Urgent").length}
-            </div>
-            <div className="text-xs text-gray-600">Urgent Leads</div>
-          </div>
         </div>
       </div>
     </div>
