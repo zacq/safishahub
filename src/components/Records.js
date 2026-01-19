@@ -8,6 +8,7 @@ export default function Records({ onNavigate }) {
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [selectedServiceType, setSelectedServiceType] = useState(""); // 'Vehicle Wash', 'Motorbike Wash', 'Carpet/Rug Wash'
   const [loading, setLoading] = useState(false);
+  const [timeFilter, setTimeFilter] = useState("day"); // 'day', 'week', 'month', 'year'
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     description: "",
@@ -258,6 +259,95 @@ export default function Records({ onNavigate }) {
       console.error('Error deleting sale:', error);
       alert('Error deleting sale. Please try again.');
     }
+  };
+
+  // Helper function to filter sales by time period
+  const filterSalesByTime = (salesData, period) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    return salesData.filter(sale => {
+      const saleDate = new Date(sale.date);
+
+      switch(period) {
+        case 'day':
+          return saleDate >= today;
+        case 'week':
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return saleDate >= weekAgo;
+        case 'month':
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return saleDate >= monthAgo;
+        case 'year':
+          const yearAgo = new Date(today);
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          return saleDate >= yearAgo;
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Calculate statistics for all employees
+  const calculateAllEmployeesStats = () => {
+    const filteredSales = filterSalesByTime(sales, timeFilter);
+    const employeeStats = {};
+
+    filteredSales.forEach(sale => {
+      if (!employeeStats[sale.employee]) {
+        employeeStats[sale.employee] = {
+          totalSales: 0,
+          totalAmount: 0,
+          byCategory: { vehicle: 0, motorbike: 0, carpet: 0 }
+        };
+      }
+      employeeStats[sale.employee].totalSales++;
+      employeeStats[sale.employee].totalAmount += parseFloat(sale.amount || 0);
+      if (sale.category) {
+        employeeStats[sale.employee].byCategory[sale.category] =
+          (employeeStats[sale.employee].byCategory[sale.category] || 0) + parseFloat(sale.amount || 0);
+      }
+    });
+
+    return employeeStats;
+  };
+
+  // Calculate statistics for selected employee
+  const calculateEmployeeStats = (employeeName) => {
+    const employeeSales = sales.filter(s => s.employee === employeeName);
+    const filteredSales = filterSalesByTime(employeeSales, timeFilter);
+
+    const stats = {
+      totalSales: filteredSales.length,
+      totalAmount: filteredSales.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0),
+      byService: {}
+    };
+
+    filteredSales.forEach(sale => {
+      const serviceKey = sale.serviceType || 'Other';
+      if (!stats.byService[serviceKey]) {
+        stats.byService[serviceKey] = {
+          count: 0,
+          amount: 0,
+          category: sale.category
+        };
+      }
+      stats.byService[serviceKey].count++;
+      stats.byService[serviceKey].amount += parseFloat(sale.amount || 0);
+    });
+
+    return stats;
+  };
+
+  // Get sales for selected employee and service
+  const getEmployeeServiceSales = () => {
+    if (!selectedEmployee || !selectedServiceType) return [];
+
+    return sales
+      .filter(s => s.employee === selectedEmployee && s.serviceType === selectedServiceType)
+      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Latest to oldest
   };
 
   // Calculate total sales
@@ -623,87 +713,283 @@ export default function Records({ onNavigate }) {
           )}
         </div>
 
-        {/* Sales List */}
+        {/* Sales History Dashboard */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center justify-between">
-            <span>📊 Sales History</span>
-            <span className="text-sm text-gray-500">{sales.length} entries</span>
-          </h2>
+          {/* Time Filter Tabs */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">📊 Sales History</h2>
+            <div className="flex gap-2">
+              {['day', 'week', 'month', 'year'].map(period => (
+                <button
+                  key={period}
+                  onClick={() => setTimeFilter(period)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    timeFilter === period
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {sales.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <div className="text-4xl mb-2">💰</div>
               <p>No sales recorded yet. Add your first sale above!</p>
             </div>
+          ) : !selectedEmployee ? (
+            // Dashboard for all employees
+            <div>
+              {(() => {
+                const stats = calculateAllEmployeesStats();
+                const employeeList = Object.entries(stats);
+
+                if (employeeList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-4xl mb-2">📊</div>
+                      <p>No sales data for this period</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-3 gap-4 mb-6">
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
+                        <div className="text-sm text-green-600 font-medium">Total Revenue</div>
+                        <div className="text-2xl font-bold text-green-700">
+                          KSh {employeeList.reduce((sum, [, data]) => sum + data.totalAmount, 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                        <div className="text-sm text-blue-600 font-medium">Total Sales</div>
+                        <div className="text-2xl font-bold text-blue-700">
+                          {employeeList.reduce((sum, [, data]) => sum + data.totalSales, 0)}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
+                        <div className="text-sm text-purple-600 font-medium">Active Employees</div>
+                        <div className="text-2xl font-bold text-purple-700">
+                          {employeeList.length}
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 className="font-semibold text-gray-700 mb-3">Employee Performance</h3>
+                    <div className="space-y-3">
+                      {employeeList
+                        .sort((a, b) => b[1].totalAmount - a[1].totalAmount)
+                        .map(([employeeName, data]) => (
+                          <div key={employeeName} className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="text-2xl">👨‍🔧</div>
+                                <div>
+                                  <h4 className="font-semibold text-gray-800">{employeeName}</h4>
+                                  <p className="text-sm text-gray-500">{data.totalSales} sales</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xl font-bold text-green-600">
+                                  KSh {data.totalAmount.toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-blue-50 p-2 rounded text-center">
+                                <div className="text-xs text-blue-600">🚗 Vehicles</div>
+                                <div className="font-semibold text-blue-700">
+                                  KSh {(data.byCategory.vehicle || 0).toLocaleString()}
+                                </div>
+                              </div>
+                              <div className="bg-orange-50 p-2 rounded text-center">
+                                <div className="text-xs text-orange-600">🏍️ Motorbikes</div>
+                                <div className="font-semibold text-orange-700">
+                                  KSh {(data.byCategory.motorbike || 0).toLocaleString()}
+                                </div>
+                              </div>
+                              <div className="bg-purple-50 p-2 rounded text-center">
+                                <div className="text-xs text-purple-600">🧺 Carpets</div>
+                                <div className="font-semibold text-purple-700">
+                                  KSh {(data.byCategory.carpet || 0).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : !selectedServiceType ? (
+            // Dashboard for selected employee
+            <div>
+              {(() => {
+                const stats = calculateEmployeeStats(selectedEmployee);
+                const serviceList = Object.entries(stats.byService);
+
+                if (serviceList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-4xl mb-2">📊</div>
+                      <p>No sales data for this employee in this period</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
+                        <div className="text-sm text-green-600 font-medium">Total Revenue</div>
+                        <div className="text-2xl font-bold text-green-700">
+                          KSh {stats.totalAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                        <div className="text-sm text-blue-600 font-medium">Total Sales</div>
+                        <div className="text-2xl font-bold text-blue-700">
+                          {stats.totalSales}
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 className="font-semibold text-gray-700 mb-3">Performance by Service</h3>
+                    <div className="space-y-3">
+                      {serviceList
+                        .sort((a, b) => b[1].amount - a[1].amount)
+                        .map(([serviceName, data]) => (
+                          <div key={serviceName} className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="text-2xl">
+                                  {data.category === 'vehicle' && '🚗'}
+                                  {data.category === 'motorbike' && '🏍️'}
+                                  {data.category === 'carpet' && '🧺'}
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-800">{serviceName}</h4>
+                                  <p className="text-sm text-gray-500">{data.count} sales</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xl font-bold text-green-600">
+                                  KSh {data.amount.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Avg: KSh {(data.amount / data.count).toFixed(0)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           ) : (
-            <div className="space-y-3">
-              {sales.map((sale) => (
-                <div key={sale.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-3 flex-1">
-                    {/* Category Icon */}
-                    <div className="text-3xl">
-                      {sale.category === 'vehicle' && '🚗'}
-                      {sale.category === 'motorbike' && '🏍️'}
-                      {sale.category === 'carpet' && '🧺'}
-                    </div>
+            // Sales list for selected employee and service (daily summary)
+            <div>
+              {(() => {
+                const serviceSales = getEmployeeServiceSales();
+                const today = new Date().toISOString().split('T')[0];
+                const todaySales = serviceSales.filter(s => s.date === today);
+                const todayTotal = todaySales.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
 
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-semibold text-gray-800">
-                          {sale.category === 'vehicle' ? sale.vehicleModel :
-                           sale.category === 'motorbike' ? `${sale.numberOfMotorbikes} Motorbike${sale.numberOfMotorbikes > 1 ? 's' : ''}` :
-                           sale.category === 'carpet' ? `${sale.size} Carpet/Rug` :
-                           sale.description}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          sale.category === 'vehicle' ? 'bg-blue-100 text-blue-800' :
-                          sale.category === 'motorbike' ? 'bg-orange-100 text-orange-800' :
-                          'bg-purple-100 text-purple-800'
-                        }`}>
-                          {sale.category === 'vehicle' ? 'Vehicle' :
-                           sale.category === 'motorbike' ? 'Motorbike' :
-                           'Carpet/Rug'}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          sale.paymentMethod === "Cash" ? "bg-green-100 text-green-800" :
-                          sale.paymentMethod === "M-Pesa" ? "bg-blue-100 text-blue-800" :
-                          sale.paymentMethod === "Card" ? "bg-purple-100 text-purple-800" :
-                          "bg-orange-100 text-orange-800"
-                        }`}>
-                          {sale.paymentMethod}
-                        </span>
-                      </div>
-
-                      {/* Service details */}
-                      <div className="text-sm text-gray-600 mb-1">
-                        👨‍🔧 {sale.employee} • 🧽 {sale.serviceType}
-                        {sale.category === 'vehicle' && sale.vehicleServiceType && ` • ${sale.vehicleServiceType}`}
-                        {sale.category === 'motorbike' && sale.motorbikeServiceType && ` • ${sale.motorbikeServiceType}`}
-                        {sale.category === 'carpet' && sale.carpetServiceType && ` • ${sale.carpetServiceType}`}
-                      </div>
-
-                      <div className="text-sm text-gray-600">
-                        📅 {new Date(sale.date).toLocaleDateString()} • 🕒 {sale.timestamp}
+                return (
+                  <div className="space-y-4">
+                    {/* Today's Summary */}
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-green-600 font-medium">Today's {selectedServiceType}</div>
+                          <div className="text-lg font-semibold text-green-700">
+                            {todaySales.length} sales • KSh {todayTotal.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="text-3xl">📅</div>
                       </div>
                     </div>
+
+                    <h3 className="font-semibold text-gray-700">Sales Records (Latest First)</h3>
+
+                    {serviceSales.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <div className="text-4xl mb-2">💰</div>
+                        <p>No sales recorded for this service yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {serviceSales.map((sale) => (
+                          <div key={sale.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className="flex items-center gap-3 flex-1">
+                              {/* Category Icon */}
+                              <div className="text-3xl">
+                                {sale.category === 'vehicle' && '🚗'}
+                                {sale.category === 'motorbike' && '🏍️'}
+                                {sale.category === 'carpet' && '🧺'}
+                              </div>
+
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="font-semibold text-gray-800">
+                                    {sale.category === 'vehicle' ? sale.vehicle_model :
+                                     sale.category === 'motorbike' ? `${sale.number_of_motorbikes} Motorbike${sale.number_of_motorbikes > 1 ? 's' : ''}` :
+                                     sale.category === 'carpet' ? `${sale.size} Carpet/Rug` :
+                                     sale.description}
+                                  </span>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    sale.payment_method === "Cash" ? "bg-green-100 text-green-800" :
+                                    sale.payment_method === "M-Pesa" ? "bg-blue-100 text-blue-800" :
+                                    sale.payment_method === "Card" ? "bg-purple-100 text-purple-800" :
+                                    "bg-orange-100 text-orange-800"
+                                  }`}>
+                                    {sale.payment_method}
+                                  </span>
+                                </div>
+
+                                {/* Service details */}
+                                <div className="text-sm text-gray-600 mb-1">
+                                  🧽 {sale.service_type}
+                                  {sale.category === 'vehicle' && sale.vehicle_service_type && ` • ${sale.vehicle_service_type}`}
+                                  {sale.category === 'motorbike' && sale.motorbike_service_type && ` • ${sale.motorbike_service_type}`}
+                                  {sale.category === 'carpet' && sale.carpet_service_type && ` • ${sale.carpet_service_type}`}
+                                </div>
+
+                                <div className="text-sm text-gray-600">
+                                  📅 {new Date(sale.date).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="text-xl font-bold text-green-600">
+                                  KSh {parseFloat(sale.amount).toLocaleString()}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => deleteSale(sale.id)}
+                                className="text-red-500 hover:text-red-700 text-2xl"
+                                title="Delete sale"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-green-600">
-                        KSh {parseFloat(sale.amount).toLocaleString()}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => deleteSale(sale.id)}
-                      className="text-red-500 hover:text-red-700 text-2xl"
-                      title="Delete sale"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })()}
             </div>
           )}
         </div>
