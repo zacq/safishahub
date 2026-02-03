@@ -350,8 +350,9 @@ export default function Records({ onNavigate }) {
       .sort((a, b) => new Date(b.date) - new Date(a.date)); // Latest to oldest
   };
 
-  // Calculate total sales
-  const totalSales = sales.reduce((sum, sale) => sum + parseFloat(sale.amount || 0), 0);
+  // Calculate total sales based on selected time filter
+  const filteredSalesForTotal = filterSalesByTime(sales, timeFilter);
+  const totalSales = filteredSalesForTotal.reduce((sum, sale) => sum + parseFloat(sale.amount || 0), 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -372,7 +373,9 @@ export default function Records({ onNavigate }) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500">Total Sales</div>
+              <div className="text-sm text-gray-500">
+                Total Sales ({timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)})
+              </div>
               <div className="text-2xl font-bold text-green-600">KSh {totalSales.toLocaleString()}</div>
             </div>
           </div>

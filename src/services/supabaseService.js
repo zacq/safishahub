@@ -353,6 +353,39 @@ export const expensesService = {
     return data;
   },
 
+  // Update expense
+  async update(id, updateData) {
+    console.log('🔍 expensesService.update: Updating expense...', id, updateData);
+
+    if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ expensesService.update: Using localStorage fallback');
+      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+      const expenses = adminData.expenses || [];
+      const updatedExpenses = expenses.map(exp =>
+        exp.id === id ? { ...exp, ...updateData } : exp
+      );
+      adminData.expenses = updatedExpenses;
+      localStorage.setItem('adminData', JSON.stringify(adminData));
+      return updatedExpenses.find(e => e.id === id);
+    }
+
+    console.log('📡 expensesService.update: Updating in Supabase...');
+    const { data, error } = await supabase
+      .from('expenses')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ expensesService.update: Error updating expense:', error);
+      throw error;
+    }
+
+    console.log('✅ expensesService.update: Expense updated successfully!', data);
+    return data;
+  },
+
   // Delete expense
   async delete(id) {
     if (!isSupabaseConfigured() || !supabase) {
@@ -491,6 +524,37 @@ export const leadsService = {
       throw error;
     }
 
+    return data;
+  },
+
+  // Update lead
+  async update(id, updateData) {
+    console.log('🔍 leadsService.update: Updating lead...', id, updateData);
+
+    if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ leadsService.update: Using localStorage fallback');
+      const leads = JSON.parse(localStorage.getItem('leadRecords') || '[]');
+      const updatedLeads = leads.map(lead =>
+        lead.id === id ? { ...lead, ...updateData } : lead
+      );
+      localStorage.setItem('leadRecords', JSON.stringify(updatedLeads));
+      return updatedLeads.find(l => l.id === id);
+    }
+
+    console.log('📡 leadsService.update: Updating in Supabase...');
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ leadsService.update: Error updating lead:', error);
+      throw error;
+    }
+
+    console.log('✅ leadsService.update: Lead updated successfully!', data);
     return data;
   },
 

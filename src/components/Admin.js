@@ -27,6 +27,11 @@ export default function Admin({ onNavigate }) {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
 
+  // Expense management state
+  const [selectedExpenseDate, setSelectedExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editExpenseForm, setEditExpenseForm] = useState({ description: "", amount: "" });
+
   // Load all data from Supabase on mount
   useEffect(() => {
     const loadData = async () => {
@@ -174,8 +179,64 @@ export default function Admin({ onNavigate }) {
     }
   };
 
+  // Start editing expense
+  const startEditExpense = (expense) => {
+    setEditingExpense(expense.id);
+    setEditExpenseForm({
+      description: expense.description || expense.name,
+      amount: expense.amount
+    });
+  };
+
+  // Cancel editing expense
+  const cancelEditExpense = () => {
+    setEditingExpense(null);
+    setEditExpenseForm({ description: "", amount: "" });
+  };
+
+  // Save edited expense
+  const saveEditedExpense = async (expenseId) => {
+    try {
+      console.log('Saving expense with ID:', expenseId);
+      console.log('Expense form data:', editExpenseForm);
+
+      // Build update data for Supabase
+      const updateData = {
+        description: editExpenseForm.description,
+        amount: parseFloat(editExpenseForm.amount)
+      };
+
+      console.log('Update data to send:', updateData);
+
+      // Update in Supabase
+      const updatedExpense = await expensesService.update(expenseId, updateData);
+
+      console.log('Updated expense:', updatedExpense);
+
+      // Update local state
+      setAdminData({
+        ...adminData,
+        expenses: adminData.expenses.map(exp =>
+          exp.id === expenseId ? { ...exp, ...updateData } : exp
+        )
+      });
+
+      setEditingExpense(null);
+      setEditExpenseForm({ description: "", amount: "" });
+      alert('Expense updated successfully!');
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      console.error('Error details:', error.message);
+      alert(`Failed to update expense: ${error.message}`);
+    }
+  };
+
   // Delete expense
   const deleteExpense = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       // Delete from Supabase
       await expensesService.delete(id);
@@ -752,9 +813,20 @@ export default function Admin({ onNavigate }) {
 
         {/* Expenses Section */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            💸 Daily Expenses
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              💸 Daily Expenses
+            </h2>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">📅 Filter by Date:</label>
+              <input
+                type="date"
+                value={selectedExpenseDate}
+                onChange={(e) => setSelectedExpenseDate(e.target.value)}
+                className="p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+          </div>
 
           <form onSubmit={addExpense} className="mb-4">
             <div className="grid md:grid-cols-3 gap-3">
@@ -783,40 +855,114 @@ export default function Admin({ onNavigate }) {
             </div>
           </form>
 
-          {adminData.expenses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">💸</div>
-              <p>No expenses recorded yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {adminData.expenses.map((expense) => (
-                <div key={expense.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-800">{expense.name}</div>
-                    <div className="text-sm text-gray-500">{expense.date}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="font-semibold text-red-600">KSh {parseInt(expense.amount).toLocaleString()}</div>
-                    <button
-                      onClick={() => deleteExpense(expense.id)}
-                      className="text-red-500 hover:text-red-700 text-xl"
-                    >
-                      ×
-                    </button>
-                  </div>
+          {(() => {
+            // Filter expenses by selected date
+            const filteredExpenses = adminData.expenses.filter(expense => {
+              if (!selectedExpenseDate) return true;
+
+              const expenseDate = expense.created_at
+                ? new Date(expense.created_at).toISOString().split('T')[0]
+                : expense.date;
+
+              return expenseDate === selectedExpenseDate;
+            });
+
+            if (filteredExpenses.length === 0) {
+              return (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-4xl mb-2">💸</div>
+                  <p>No expenses recorded for this date</p>
                 </div>
-              ))}
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-700">Total Expenses:</span>
-                  <span className="text-xl font-bold text-red-600">
-                    KSh {adminData.expenses.reduce((sum, exp) => sum + (parseInt(exp.amount) || 0), 0).toLocaleString()}
-                  </span>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {filteredExpenses.map((expense) => (
+                  <div key={expense.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors">
+                    {editingExpense === expense.id ? (
+                      /* Edit Mode */
+                      <div className="space-y-3">
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Expense Name</label>
+                            <input
+                              type="text"
+                              value={editExpenseForm.description}
+                              onChange={(e) => setEditExpenseForm({ ...editExpenseForm, description: e.target.value })}
+                              className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Amount (KSh)</label>
+                            <input
+                              type="number"
+                              value={editExpenseForm.amount}
+                              onChange={(e) => setEditExpenseForm({ ...editExpenseForm, amount: e.target.value })}
+                              className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={cancelEditExpense}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => saveEditedExpense(expense.id)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                          >
+                            💾 Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* View Mode */
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-800 text-lg">{expense.description || expense.name}</div>
+                          <div className="text-sm text-gray-500">
+                            📅 {expense.created_at
+                              ? new Date(expense.created_at).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })
+                              : expense.date || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl font-bold text-red-600">KSh {parseInt(expense.amount).toLocaleString()}</div>
+                          <button
+                            onClick={() => startEditExpense(expense)}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => deleteExpense(expense.id)}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-700 text-lg">Total Expenses:</span>
+                    <span className="text-2xl font-bold text-red-600">
+                      KSh {filteredExpenses.reduce((sum, exp) => sum + (parseInt(exp.amount) || 0), 0).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Employee Management Section */}
