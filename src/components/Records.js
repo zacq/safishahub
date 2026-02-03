@@ -269,7 +269,7 @@ export default function Records({ onNavigate }) {
     return salesData.filter(sale => {
       const saleDate = new Date(sale.date);
 
-      switch(period) {
+      switch (period) {
         case 'day':
           return saleDate >= today;
         case 'week':
@@ -723,11 +723,10 @@ export default function Records({ onNavigate }) {
                 <button
                   key={period}
                   onClick={() => setTimeFilter(period)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    timeFilter === period
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${timeFilter === period
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {period.charAt(0).toUpperCase() + period.slice(1)}
                 </button>
@@ -941,16 +940,15 @@ export default function Records({ onNavigate }) {
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <span className="font-semibold text-gray-800">
                                     {sale.category === 'vehicle' ? sale.vehicle_model :
-                                     sale.category === 'motorbike' ? `${sale.number_of_motorbikes} Motorbike${sale.number_of_motorbikes > 1 ? 's' : ''}` :
-                                     sale.category === 'carpet' ? `${sale.size} Carpet/Rug` :
-                                     sale.description}
+                                      sale.category === 'motorbike' ? `${sale.number_of_motorbikes} Motorbike${sale.number_of_motorbikes > 1 ? 's' : ''}` :
+                                        sale.category === 'carpet' ? `${sale.size} Carpet/Rug` :
+                                          sale.description}
                                   </span>
-                                  <span className={`text-xs px-2 py-1 rounded-full ${
-                                    sale.payment_method === "Cash" ? "bg-green-100 text-green-800" :
-                                    sale.payment_method === "M-Pesa" ? "bg-blue-100 text-blue-800" :
-                                    sale.payment_method === "Card" ? "bg-purple-100 text-purple-800" :
-                                    "bg-orange-100 text-orange-800"
-                                  }`}>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${sale.payment_method === "Cash" ? "bg-green-100 text-green-800" :
+                                      sale.payment_method === "M-Pesa" ? "bg-blue-100 text-blue-800" :
+                                        sale.payment_method === "Card" ? "bg-purple-100 text-purple-800" :
+                                          "bg-orange-100 text-orange-800"
+                                    }`}>
                                     {sale.payment_method}
                                   </span>
                                 </div>

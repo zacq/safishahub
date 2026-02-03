@@ -16,6 +16,17 @@ export default function Admin({ onNavigate }) {
   const [noteForm, setNoteForm] = useState({ category: "Incident", content: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", email: "", idNumber: "", image: "" });
 
+  // Sales history modal state
+  const [showSalesHistory, setShowSalesHistory] = useState(false);
+  const [selectedServiceCategory, setSelectedServiceCategory] = useState(null); // 'vehicle', 'motorbike', 'carpet'
+  const [editingSale, setEditingSale] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
+  // Employee management state
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
+
   // Load all data from Supabase on mount
   useEffect(() => {
     const loadData = async () => {
@@ -262,8 +273,83 @@ export default function Admin({ onNavigate }) {
     }
   };
 
+  // Start editing employee
+  const startEditEmployee = (employee) => {
+    setEditingEmployee(employee.id);
+    setEmployeeForm({
+      name: employee.name,
+      phone: employee.phone,
+      email: employee.email || '',
+      idNumber: employee.idNumber,
+      image: employee.image || ''
+    });
+  };
+
+  // Cancel editing employee
+  const cancelEditEmployee = () => {
+    setEditingEmployee(null);
+    setEmployeeForm({ name: "", phone: "", email: "", idNumber: "", image: "" });
+  };
+
+  // Save edited employee
+  const saveEditedEmployee = async (employeeId) => {
+    try {
+      console.log('Saving employee with ID:', employeeId);
+      console.log('Employee form data:', employeeForm);
+
+      // Build update data with snake_case for Supabase (only columns that exist)
+      const updateData = {
+        name: employeeForm.name,
+        phone: employeeForm.phone,
+        id_number: employeeForm.idNumber
+      };
+
+      // Add photo_url if image exists
+      if (employeeForm.image) {
+        updateData.photo_url = employeeForm.image;
+      }
+
+      console.log('Update data to send:', updateData);
+
+      // Update in Supabase
+      const updatedEmployee = await employeesService.update(employeeId, updateData);
+
+      console.log('Updated employee:', updatedEmployee);
+
+      // Update local state with camelCase
+      const localUpdateData = {
+        name: employeeForm.name,
+        phone: employeeForm.phone,
+        idNumber: employeeForm.idNumber
+      };
+
+      if (employeeForm.image) {
+        localUpdateData.image = employeeForm.image;
+      }
+
+      setAdminData({
+        ...adminData,
+        employees: adminData.employees.map(emp =>
+          emp.id === employeeId ? { ...emp, ...localUpdateData } : emp
+        )
+      });
+
+      setEditingEmployee(null);
+      setEmployeeForm({ name: "", phone: "", email: "", idNumber: "", image: "" });
+      alert('Employee updated successfully!');
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      console.error('Error details:', error.message);
+      alert(`Failed to update employee: ${error.message}`);
+    }
+  };
+
   // Delete employee
   const deleteEmployee = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       // Delete from Supabase
       await employeesService.delete(id);
@@ -274,10 +360,151 @@ export default function Admin({ onNavigate }) {
         employees: adminData.employees.filter(emp => emp.id !== id)
       });
 
+      // Clear selection if deleted employee was selected
+      if (selectedEmployeeId === id) {
+        setSelectedEmployeeId("");
+      }
+
       alert('Employee deleted successfully!');
     } catch (error) {
       console.error('Error deleting employee:', error);
       alert('Failed to delete employee. Please try again.');
+    }
+  };
+
+  // Open sales history for a specific service category
+  const openSalesHistory = (category) => {
+    setSelectedServiceCategory(category);
+    setShowSalesHistory(true);
+  };
+
+  // Get filtered sales for the selected service category
+  const getServiceSales = () => {
+    if (!selectedServiceCategory) return [];
+
+    let filteredSales = sales.filter(sale => sale.category === selectedServiceCategory);
+
+    // Apply date filter
+    if (selectedDate) {
+      filteredSales = filteredSales.filter(sale => sale.date === selectedDate);
+    }
+
+    // Apply employee filter
+    if (selectedEmployee !== "all") {
+      filteredSales = filteredSales.filter(sale => sale.employee === selectedEmployee);
+    }
+
+    return filteredSales;
+  };
+
+  // Start editing a sale
+  const startEditSale = (sale) => {
+    setEditingSale(sale.id);
+    setEditForm({
+      amount: sale.amount,
+      vehicleServiceType: sale.vehicleServiceType || '',
+      motorbikeServiceType: sale.motorbikeServiceType || '',
+      carpetServiceType: sale.carpetServiceType || '',
+      vehicleModel: sale.vehicleModel || '',
+      numberOfMotorbikes: sale.numberOfMotorbikes || '',
+      size: sale.size || '',
+      paymentMethod: sale.paymentMethod || 'Cash'
+    });
+  };
+
+  // Cancel editing
+  const cancelEditSale = () => {
+    setEditingSale(null);
+    setEditForm({});
+  };
+
+  // Save edited sale
+  const saveEditedSale = async (saleId) => {
+    try {
+      console.log('Saving sale with ID:', saleId);
+      console.log('Edit form data:', editForm);
+      console.log('Selected service category:', selectedServiceCategory);
+
+      // Build update data with snake_case column names for Supabase
+      const updateData = {
+        amount: editForm.amount,
+        payment_method: editForm.paymentMethod
+      };
+
+      // Add service-specific fields with snake_case
+      if (selectedServiceCategory === 'vehicle') {
+        updateData.vehicle_service_type = editForm.vehicleServiceType;
+        if (editForm.vehicleModel) updateData.vehicle_model = editForm.vehicleModel;
+      } else if (selectedServiceCategory === 'motorbike') {
+        updateData.motorbike_service_type = editForm.motorbikeServiceType;
+        if (editForm.numberOfMotorbikes) updateData.number_of_motorbikes = editForm.numberOfMotorbikes;
+      } else if (selectedServiceCategory === 'carpet') {
+        updateData.carpet_service_type = editForm.carpetServiceType;
+        if (editForm.size) updateData.size = editForm.size;
+      }
+
+      console.log('Update data to send:', updateData);
+
+      // Update in Supabase
+      const updatedSale = await salesService.update(saleId, updateData);
+
+      console.log('Updated sale:', updatedSale);
+
+      // Update local state with camelCase for consistency
+      const localUpdateData = {
+        amount: editForm.amount,
+        paymentMethod: editForm.paymentMethod
+      };
+
+      if (selectedServiceCategory === 'vehicle') {
+        localUpdateData.vehicleServiceType = editForm.vehicleServiceType;
+        if (editForm.vehicleModel) localUpdateData.vehicleModel = editForm.vehicleModel;
+      } else if (selectedServiceCategory === 'motorbike') {
+        localUpdateData.motorbikeServiceType = editForm.motorbikeServiceType;
+        if (editForm.numberOfMotorbikes) localUpdateData.numberOfMotorbikes = editForm.numberOfMotorbikes;
+      } else if (selectedServiceCategory === 'carpet') {
+        localUpdateData.carpetServiceType = editForm.carpetServiceType;
+        if (editForm.size) localUpdateData.size = editForm.size;
+      }
+
+      setSales(sales.map(sale =>
+        sale.id === saleId ? { ...sale, ...localUpdateData } : sale
+      ));
+
+      setEditingSale(null);
+      setEditForm({});
+      alert('Sale updated successfully!');
+    } catch (error) {
+      console.error('Error updating sale:', error);
+      console.error('Error details:', error.message);
+      alert(`Failed to update sale: ${error.message}`);
+    }
+  };
+
+  // Delete sale
+  const deleteSale = async (saleId) => {
+    if (!window.confirm('Are you sure you want to delete this sale record? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      console.log('Deleting sale with ID:', saleId);
+
+      // Delete from Supabase
+      await salesService.delete(saleId);
+
+      // Update local state
+      setSales(sales.filter(sale => sale.id !== saleId));
+
+      // Close modal if no more sales
+      if (getServiceSales().length <= 1) {
+        setShowSalesHistory(false);
+      }
+
+      alert('Sale deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      alert(`Failed to delete sale: ${error.message}`);
     }
   };
 
@@ -393,6 +620,12 @@ export default function Admin({ onNavigate }) {
                     </div>
                   </div>
                 )}
+                <button
+                  onClick={() => openSalesHistory('vehicle')}
+                  className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  📋 View Sales History
+                </button>
               </div>
             </div>
 
@@ -423,6 +656,12 @@ export default function Admin({ onNavigate }) {
                     </div>
                   </div>
                 )}
+                <button
+                  onClick={() => openSalesHistory('motorbike')}
+                  className="w-full bg-orange-600 text-white py-2 px-3 rounded-lg text-sm font-semibold hover:bg-orange-700 transition-colors"
+                >
+                  📋 View Sales History
+                </button>
               </div>
             </div>
 
@@ -453,6 +692,12 @@ export default function Admin({ onNavigate }) {
                     </div>
                   </div>
                 )}
+                <button
+                  onClick={() => openSalesHistory('carpet')}
+                  className="w-full bg-teal-600 text-white py-2 px-3 rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors"
+                >
+                  📋 View Sales History
+                </button>
               </div>
             </div>
           </div>
@@ -576,11 +821,21 @@ export default function Admin({ onNavigate }) {
 
         {/* Employee Management Section */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            👥 Employee Management
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold flex items-center">
+              👥 Employee Management
+            </h2>
+            <button
+              onClick={() => setShowAddEmployeeForm(!showAddEmployeeForm)}
+              className="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+            >
+              {showAddEmployeeForm ? '✕ Cancel' : '+ Add Employee'}
+            </button>
+          </div>
 
-          <form onSubmit={addEmployee} className="mb-4">
+          {/* Add Employee Form (Collapsible) */}
+          {showAddEmployeeForm && (
+            <form onSubmit={addEmployee} className="mb-6 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <input
                 type="text"
@@ -650,59 +905,171 @@ export default function Admin({ onNavigate }) {
               type="submit"
               className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
             >
-              + Add Employee
+              💾 Save Employee
             </button>
           </form>
+          )}
 
+          {/* Employee List Section */}
           {adminData.employees.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">👥</div>
-              <p>No employees added yet</p>
+            <div className="text-center py-12 text-gray-500">
+              <div className="text-6xl mb-4">👥</div>
+              <p className="text-lg font-medium">No employees added yet</p>
+              <p className="text-sm">Click "+ Add Employee" to get started</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {adminData.employees.map((employee) => (
-                <div key={employee.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                  {/* Employee Image */}
-                  <div className="flex-shrink-0">
-                    {employee.image ? (
-                      <img
-                        src={employee.image}
-                        alt={employee.name}
-                        className="w-20 h-20 rounded-lg object-cover border-2 border-gray-300"
-                      />
+            <div>
+              {/* Employee Selector Dropdown */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Employee to View/Edit
+                </label>
+                <select
+                  value={selectedEmployeeId}
+                  onChange={(e) => {
+                    setSelectedEmployeeId(e.target.value);
+                    setEditingEmployee(null);
+                    setEmployeeForm({ name: "", phone: "", email: "", idNumber: "", image: "" });
+                  }}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                >
+                  <option value="">-- Select an employee --</option>
+                  {adminData.employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} - {emp.phone}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selected Employee Details */}
+              {selectedEmployeeId && (() => {
+                const employee = adminData.employees.find(e => e.id === selectedEmployeeId);
+                if (!employee) return null;
+
+                return (
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
+                    {editingEmployee === employee.id ? (
+                      /* Edit Mode */
+                      <div>
+                        <h3 className="text-lg font-semibold text-purple-800 mb-4">✏️ Edit Employee Details</h3>
+                        <div className="space-y-4">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                              <input
+                                type="text"
+                                value={employeeForm.name}
+                                onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
+                                className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                              <input
+                                type="tel"
+                                value={employeeForm.phone}
+                                onChange={(e) => setEmployeeForm({ ...employeeForm, phone: e.target.value })}
+                                className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">ID Number *</label>
+                              <input
+                                type="text"
+                                value={employeeForm.idNumber}
+                                onChange={(e) => setEmployeeForm({ ...employeeForm, idNumber: e.target.value })}
+                                className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 justify-end">
+                            <button
+                              onClick={cancelEditEmployee}
+                              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => saveEditedEmployee(employee.id)}
+                              className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                            >
+                              💾 Save Changes
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-lg bg-purple-100 flex items-center justify-center text-3xl">
-                        👤
+                      /* View Mode */
+                      <div>
+                        <div className="flex items-start gap-6 mb-6">
+                          {/* Employee Photo */}
+                          <div className="flex-shrink-0">
+                            {employee.image ? (
+                              <img
+                                src={employee.image}
+                                alt={employee.name}
+                                className="w-32 h-32 rounded-xl object-cover border-4 border-white shadow-lg"
+                              />
+                            ) : (
+                              <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-6xl border-4 border-white shadow-lg">
+                                👤
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Employee Info */}
+                          <div className="flex-1">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                              👨‍🔧 {employee.name}
+                            </h3>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-600 font-semibold">📱 Phone:</span>
+                                <span className="text-gray-700">{employee.phone}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-600 font-semibold">🆔 ID Number:</span>
+                                <span className="text-gray-700">{employee.idNumber}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-600 font-semibold">📅 Added:</span>
+                                <span className="text-gray-700">{employee.dateAdded || 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3 justify-end pt-4 border-t-2 border-purple-200">
+                          <button
+                            onClick={() => startEditEmployee(employee)}
+                            className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => deleteEmployee(employee.id)}
+                            className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
+                );
+              })()}
 
-                  {/* Employee Details */}
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-800 text-lg">👨‍🔧 {employee.name}</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mt-2">
-                      <div className="text-sm text-gray-600">📱 {employee.phone}</div>
-                      {employee.email && <div className="text-sm text-gray-600">📧 {employee.email}</div>}
-                      <div className="text-sm text-gray-600">🆔 {employee.idNumber}</div>
-                      <div className="text-xs text-gray-500">Added: {employee.dateAdded}</div>
-                    </div>
-                  </div>
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => deleteEmployee(employee.id)}
-                    className="text-red-500 hover:text-red-700 text-2xl flex-shrink-0"
-                    title="Delete employee"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              {/* Total Employees Counter */}
+              <div className="mt-6 pt-4 border-t-2 border-gray-200">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-700">Total Employees:</span>
-                  <span className="text-xl font-bold text-purple-600">
+                  <span className="font-semibold text-gray-700 text-lg">Total Employees:</span>
+                  <span className="text-2xl font-bold text-purple-600">
                     {adminData.employees.length}
                   </span>
                 </div>
@@ -780,6 +1147,235 @@ export default function Admin({ onNavigate }) {
             </div>
           )}
         </div>
+
+        {/* Sales History Modal */}
+        {showSalesHistory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">
+                      {selectedServiceCategory === 'vehicle' && '🚗 Vehicle Wash Sales History'}
+                      {selectedServiceCategory === 'motorbike' && '🏍️ Motorbike Wash Sales History'}
+                      {selectedServiceCategory === 'carpet' && '🧺 Carpet/Rug Wash Sales History'}
+                    </h2>
+                    <p className="text-sm text-purple-100 mt-1">
+                      {selectedDate && `Date: ${selectedDate}`} • {selectedEmployee !== 'all' ? `Employee: ${selectedEmployee}` : 'All Employees'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowSalesHistory(false);
+                      setEditingSale(null);
+                      setEditForm({});
+                    }}
+                    className="text-white hover:text-gray-200 text-3xl font-bold"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {getServiceSales().length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="text-6xl mb-4">📊</div>
+                    <p className="text-lg">No sales records found</p>
+                    <p className="text-sm">Try adjusting your filters</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {getServiceSales().map((sale) => (
+                      <div key={sale.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors">
+                        {editingSale === sale.id ? (
+                          /* Edit Mode */
+                          <div className="space-y-3">
+                            <div className="grid md:grid-cols-2 gap-3">
+                              {/* Service Type */}
+                              {selectedServiceCategory === 'vehicle' && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.vehicleServiceType}
+                                    onChange={(e) => setEditForm({ ...editForm, vehicleServiceType: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                  />
+                                </div>
+                              )}
+                              {selectedServiceCategory === 'motorbike' && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.motorbikeServiceType}
+                                    onChange={(e) => setEditForm({ ...editForm, motorbikeServiceType: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                  />
+                                </div>
+                              )}
+                              {selectedServiceCategory === 'carpet' && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.carpetServiceType}
+                                    onChange={(e) => setEditForm({ ...editForm, carpetServiceType: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                  />
+                                </div>
+                              )}
+
+                              {/* Amount */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Amount (KSh)</label>
+                                <input
+                                  type="number"
+                                  value={editForm.amount}
+                                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                                  className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                />
+                              </div>
+
+                              {/* Payment Method */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Payment Method</label>
+                                <select
+                                  value={editForm.paymentMethod}
+                                  onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
+                                  className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                >
+                                  <option value="Cash">Cash</option>
+                                  <option value="M-Pesa">M-Pesa</option>
+                                  <option value="Card">Card</option>
+                                  <option value="Bank Transfer">Bank Transfer</option>
+                                </select>
+                              </div>
+
+                              {/* Additional fields based on category */}
+                              {selectedServiceCategory === 'vehicle' && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Vehicle Model</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.vehicleModel}
+                                    onChange={(e) => setEditForm({ ...editForm, vehicleModel: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                  />
+                                </div>
+                              )}
+                              {selectedServiceCategory === 'motorbike' && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Number of Motorbikes</label>
+                                  <input
+                                    type="number"
+                                    value={editForm.numberOfMotorbikes}
+                                    onChange={(e) => setEditForm({ ...editForm, numberOfMotorbikes: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                  />
+                                </div>
+                              )}
+                              {selectedServiceCategory === 'carpet' && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Size</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.size}
+                                    onChange={(e) => setEditForm({ ...editForm, size: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={cancelEditSale}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => saveEditedSale(sale.id)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                              >
+                                💾 Save Changes
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* View Mode */
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="text-2xl">
+                                  {selectedServiceCategory === 'vehicle' && '🚗'}
+                                  {selectedServiceCategory === 'motorbike' && '🏍️'}
+                                  {selectedServiceCategory === 'carpet' && '🧺'}
+                                </span>
+                                <div>
+                                  <div className="font-semibold text-gray-800 text-lg">
+                                    {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
+                                    {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
+                                    {selectedServiceCategory === 'carpet' && sale.carpetServiceType}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Model: ${sale.vehicleModel}`}
+                                    {selectedServiceCategory === 'motorbike' && sale.numberOfMotorbikes && `Qty: ${sale.numberOfMotorbikes}`}
+                                    {selectedServiceCategory === 'carpet' && sale.size && `Size: ${sale.size}`}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                <div>👤 {sale.employee}</div>
+                                <div>💳 {sale.paymentMethod}</div>
+                                <div>📅 {sale.date}</div>
+                                <div>🕐 {sale.timestamp}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-green-600">KSh {parseFloat(sale.amount).toLocaleString()}</div>
+                              </div>
+                              <button
+                                onClick={() => startEditSale(sale)}
+                                className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                onClick={() => deleteSale(sale.id)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="bg-gray-50 p-4 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Total Records: <span className="font-semibold">{getServiceSales().length}</span>
+                  </div>
+                  <div className="text-lg font-bold text-green-600">
+                    Total Revenue: KSh {getServiceSales().reduce((sum, sale) => sum + (parseFloat(sale.amount) || 0), 0).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

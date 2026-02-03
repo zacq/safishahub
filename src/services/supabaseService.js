@@ -113,6 +113,37 @@ export const salesService = {
     return data;
   },
 
+  // Update sale
+  async update(id, updateData) {
+    console.log('🔍 salesService.update: Updating sale...', id, updateData);
+
+    if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ salesService.update: Using localStorage fallback');
+      const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
+      const updatedSales = sales.map(sale =>
+        sale.id === id ? { ...sale, ...updateData } : sale
+      );
+      localStorage.setItem('dailySales', JSON.stringify(updatedSales));
+      return updatedSales.find(s => s.id === id);
+    }
+
+    console.log('📡 salesService.update: Updating in Supabase...');
+    const { data, error } = await supabase
+      .from('sales')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ salesService.update: Error updating sale:', error);
+      throw error;
+    }
+
+    console.log('✅ salesService.update: Sale updated successfully!', data);
+    return data;
+  },
+
   // Delete sale
   async delete(id) {
     if (!isSupabaseConfigured() || !supabase) {
@@ -182,6 +213,39 @@ export const employeesService = {
       throw error;
     }
 
+    return data;
+  },
+
+  // Update employee
+  async update(id, updateData) {
+    console.log('🔍 employeesService.update: Updating employee...', id, updateData);
+
+    if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ employeesService.update: Using localStorage fallback');
+      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+      const employees = adminData.employees || [];
+      const updatedEmployees = employees.map(emp =>
+        emp.id === id ? { ...emp, ...updateData } : emp
+      );
+      adminData.employees = updatedEmployees;
+      localStorage.setItem('adminData', JSON.stringify(adminData));
+      return updatedEmployees.find(e => e.id === id);
+    }
+
+    console.log('📡 employeesService.update: Updating in Supabase...');
+    const { data, error } = await supabase
+      .from('employees')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ employeesService.update: Error updating employee:', error);
+      throw error;
+    }
+
+    console.log('✅ employeesService.update: Employee updated successfully!', data);
     return data;
   },
 
