@@ -7,6 +7,24 @@ import { supabase, isSupabaseConfigured } from '../config/supabase';
 
 // ==================== SALES ====================
 
+// Helper function to transform sales data from snake_case (DB) to camelCase (React)
+const transformSaleFromDB = (sale) => {
+  if (!sale) return sale;
+
+  return {
+    ...sale,
+    // Map snake_case DB fields to camelCase React properties
+    vehicleModel: sale.vehicle_model,
+    vehicleServiceType: sale.vehicle_service_type,
+    motorbikeServiceType: sale.motorbike_service_type,
+    numberOfMotorbikes: sale.number_of_motorbikes,
+    carpetServiceType: sale.carpet_service_type,
+    paymentMethod: sale.payment_method,
+    serviceType: sale.service_type,
+    createdAt: sale.created_at
+  };
+};
+
 export const salesService = {
   // Get all sales
   async getAll() {
@@ -32,7 +50,10 @@ export const salesService = {
       }
 
       console.log('✅ salesService.getAll: Fetched', data?.length || 0, 'sales');
-      return data;
+      // Transform data from snake_case to camelCase
+      const transformedData = data.map(transformSaleFromDB);
+      console.log('🔄 salesService.getAll: Transformed data sample:', transformedData[0]);
+      return transformedData;
     } catch (error) {
       console.error('❌ salesService.getAll: Exception:', error);
       return JSON.parse(localStorage.getItem('dailySales') || '[]');
@@ -110,7 +131,8 @@ export const salesService = {
     }
 
     console.log('✅ salesService.create: Sale created successfully!', data);
-    return data;
+    // Transform the returned data from snake_case to camelCase
+    return transformSaleFromDB(data);
   },
 
   // Update sale
@@ -141,6 +163,45 @@ export const salesService = {
     }
 
     console.log('✅ salesService.update: Sale updated successfully!', data);
+    // Transform the returned data from snake_case to camelCase
+    return transformSaleFromDB(data);
+  },
+
+  // Mark carpet as returned
+  async markAsReturned(id) {
+    console.log('🔍 salesService.markAsReturned: Marking carpet as returned...', id);
+
+    if (!isSupabaseConfigured() || !supabase) {
+      console.log('⚠️ salesService.markAsReturned: Using localStorage fallback');
+      const sales = JSON.parse(localStorage.getItem('dailySales') || '[]');
+      const updatedSales = sales.map(sale =>
+        sale.id === id ? {
+          ...sale,
+          returned: true,
+          returnedDate: new Date().toISOString()
+        } : sale
+      );
+      localStorage.setItem('dailySales', JSON.stringify(updatedSales));
+      return updatedSales.find(s => s.id === id);
+    }
+
+    console.log('📡 salesService.markAsReturned: Updating in Supabase...');
+    const { data, error } = await supabase
+      .from('sales')
+      .update({
+        returned: true,
+        returned_date: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ salesService.markAsReturned: Error marking as returned:', error);
+      throw error;
+    }
+
+    console.log('✅ salesService.markAsReturned: Carpet marked as returned!', data);
     return data;
   },
 

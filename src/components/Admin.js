@@ -22,6 +22,10 @@ export default function Admin({ onNavigate }) {
   const [editingSale, setEditingSale] = useState(null);
   const [editForm, setEditForm] = useState({});
 
+  // Sales history date/period filter state
+  const [historyFilterPeriod, setHistoryFilterPeriod] = useState('day'); // 'day', 'week', 'month', 'year'
+  const [historyFilterDate, setHistoryFilterDate] = useState(new Date().toISOString().split('T')[0]);
+
   // Employee management state
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -445,9 +449,17 @@ export default function Admin({ onNavigate }) {
 
     let filteredSales = sales.filter(sale => sale.category === selectedServiceCategory);
 
-    // Apply date filter
-    if (selectedDate) {
-      filteredSales = filteredSales.filter(sale => sale.date === selectedDate);
+    // Apply date/period filter for sales history modal
+    if (showSalesHistory) {
+      const { startDate, endDate } = getDateRangeForPeriod(historyFilterPeriod, historyFilterDate);
+      filteredSales = filteredSales.filter(sale => {
+        return sale.date >= startDate && sale.date <= endDate;
+      });
+    } else {
+      // Apply single date filter for other views
+      if (selectedDate) {
+        filteredSales = filteredSales.filter(sale => sale.date === selectedDate);
+      }
     }
 
     // Apply employee filter
@@ -456,6 +468,106 @@ export default function Admin({ onNavigate }) {
     }
 
     return filteredSales;
+  };
+
+  // Helper function to extract time from timestamp
+  const formatTimeOnly = (timestamp) => {
+    if (!timestamp) return 'N/A';
+
+    // If timestamp is an ISO string or contains 'T', extract time portion
+    if (timestamp.includes('T')) {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    }
+
+    // If it's already just a time string (HH:MM:SS), return as is
+    if (timestamp.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return timestamp;
+    }
+
+    // If it contains date and time separated by space or 'T'
+    const timePart = timestamp.split(/[T\s]/)[1];
+    if (timePart) {
+      // Remove timezone info if present
+      return timePart.split(/[+-]/)[0].substring(0, 8);
+    }
+
+    return timestamp;
+  };
+
+  // Calculate date range based on period and selected date
+  const getDateRangeForPeriod = (period, selectedDate) => {
+    const date = new Date(selectedDate);
+    let startDate, endDate;
+
+    switch (period) {
+      case 'day':
+        startDate = selectedDate;
+        endDate = selectedDate;
+        break;
+
+      case 'week':
+        // Get the start of the week (Sunday)
+        const dayOfWeek = date.getDay();
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - dayOfWeek);
+        startDate = startOfWeek.toISOString().split('T')[0];
+
+        // Get the end of the week (Saturday)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endDate = endOfWeek.toISOString().split('T')[0];
+        break;
+
+      case 'month':
+        // Get the first day of the month
+        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        startDate = startOfMonth.toISOString().split('T')[0];
+
+        // Get the last day of the month
+        const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        endDate = endOfMonth.toISOString().split('T')[0];
+        break;
+
+      case 'year':
+        // Get the first day of the year
+        const startOfYear = new Date(date.getFullYear(), 0, 1);
+        startDate = startOfYear.toISOString().split('T')[0];
+
+        // Get the last day of the year
+        const endOfYear = new Date(date.getFullYear(), 11, 31);
+        endDate = endOfYear.toISOString().split('T')[0];
+        break;
+
+      default:
+        startDate = selectedDate;
+        endDate = selectedDate;
+    }
+
+    return { startDate, endDate };
+  };
+
+  // Group sales by employee
+  const getGroupedSalesByEmployee = () => {
+    const serviceSales = getServiceSales();
+
+    // Group sales by employee name
+    const grouped = serviceSales.reduce((acc, sale) => {
+      const employeeName = sale.employee || 'Unknown';
+      if (!acc[employeeName]) {
+        acc[employeeName] = [];
+      }
+      acc[employeeName].push(sale);
+      return acc;
+    }, {});
+
+    // Convert to array and sort by employee name
+    return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
   };
 
   // Start editing a sale
@@ -566,6 +678,34 @@ export default function Admin({ onNavigate }) {
     } catch (error) {
       console.error('Error deleting sale:', error);
       alert(`Failed to delete sale: ${error.message}`);
+    }
+  };
+
+  // Mark carpet as returned
+  const markCarpetAsReturned = async (saleId) => {
+    if (!window.confirm('Mark this carpet as returned to the customer?')) {
+      return;
+    }
+
+    try {
+      console.log('Marking carpet as returned with ID:', saleId);
+
+      // Update in Supabase
+      const updatedSale = await salesService.markAsReturned(saleId);
+
+      // Update local state
+      setSales(sales.map(sale =>
+        sale.id === saleId ? {
+          ...sale,
+          returned: true,
+          returnedDate: updatedSale.returned_date || new Date().toISOString()
+        } : sale
+      ));
+
+      alert('✅ Carpet marked as returned successfully!');
+    } catch (error) {
+      console.error('Error marking carpet as returned:', error);
+      alert(`Failed to mark carpet as returned: ${error.message}`);
     }
   };
 
@@ -776,13 +916,27 @@ export default function Admin({ onNavigate }) {
                           {sale.category === "vehicle" ? "🚗" : sale.category === "motorbike" ? "🏍️" : "🧺"}
                         </span>
                         <div>
-                          <div className="font-medium text-gray-800">
-                            {sale.category === "vehicle" && sale.vehicleServiceType}
-                            {sale.category === "motorbike" && sale.motorbikeServiceType}
-                            {sale.category === "carpet" && sale.carpetServiceType}
+                          <div className="font-medium text-gray-800 flex items-center gap-2">
+                            <span>
+                              {sale.category === "vehicle" && sale.vehicleServiceType}
+                              {sale.category === "motorbike" && sale.motorbikeServiceType}
+                              {sale.category === "carpet" && sale.carpetServiceType}
+                            </span>
+                            {/* Return status badge for carpets */}
+                            {sale.category === 'carpet' && (
+                              sale.returned ? (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                  ✅ Returned
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full animate-pulse">
+                                  🕐 At Car Wash
+                                </span>
+                              )
+                            )}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {sale.employee} • {sale.timestamp}
+                            {sale.employee} • {formatTimeOnly(sale.timestamp)}
                           </div>
                         </div>
                       </div>
@@ -1300,7 +1454,7 @@ export default function Admin({ onNavigate }) {
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-2xl font-bold">
                       {selectedServiceCategory === 'vehicle' && '🚗 Vehicle Wash Sales History'}
@@ -1308,7 +1462,7 @@ export default function Admin({ onNavigate }) {
                       {selectedServiceCategory === 'carpet' && '🧺 Carpet/Rug Wash Sales History'}
                     </h2>
                     <p className="text-sm text-purple-100 mt-1">
-                      {selectedDate && `Date: ${selectedDate}`} • {selectedEmployee !== 'all' ? `Employee: ${selectedEmployee}` : 'All Employees'}
+                      {selectedEmployee !== 'all' ? `Employee: ${selectedEmployee}` : 'All Employees'}
                     </p>
                   </div>
                   <button
@@ -1322,6 +1476,81 @@ export default function Admin({ onNavigate }) {
                     ×
                   </button>
                 </div>
+
+                {/* Date/Period Filter Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Period Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-purple-100 mb-2">View Period</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setHistoryFilterPeriod('day')}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          historyFilterPeriod === 'day'
+                            ? 'bg-white text-purple-600'
+                            : 'bg-purple-500 text-white hover:bg-purple-400'
+                        }`}
+                      >
+                        Day
+                      </button>
+                      <button
+                        onClick={() => setHistoryFilterPeriod('week')}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          historyFilterPeriod === 'week'
+                            ? 'bg-white text-purple-600'
+                            : 'bg-purple-500 text-white hover:bg-purple-400'
+                        }`}
+                      >
+                        Week
+                      </button>
+                      <button
+                        onClick={() => setHistoryFilterPeriod('month')}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          historyFilterPeriod === 'month'
+                            ? 'bg-white text-purple-600'
+                            : 'bg-purple-500 text-white hover:bg-purple-400'
+                        }`}
+                      >
+                        Month
+                      </button>
+                      <button
+                        onClick={() => setHistoryFilterPeriod('year')}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          historyFilterPeriod === 'year'
+                            ? 'bg-white text-purple-600'
+                            : 'bg-purple-500 text-white hover:bg-purple-400'
+                        }`}
+                      >
+                        Year
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Date Picker */}
+                  <div>
+                    <label className="block text-sm font-medium text-purple-100 mb-2">
+                      Select {historyFilterPeriod === 'day' ? 'Date' : historyFilterPeriod === 'week' ? 'Week (any day)' : historyFilterPeriod === 'month' ? 'Month (any day)' : 'Year (any day)'}
+                    </label>
+                    <input
+                      type="date"
+                      value={historyFilterDate}
+                      onChange={(e) => setHistoryFilterDate(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Display selected date range */}
+                <div className="mt-3 text-sm text-purple-100">
+                  {(() => {
+                    const { startDate, endDate } = getDateRangeForPeriod(historyFilterPeriod, historyFilterDate);
+                    if (startDate === endDate) {
+                      return `📅 Showing: ${startDate}`;
+                    } else {
+                      return `📅 Showing: ${startDate} to ${endDate}`;
+                    }
+                  })()}
+                </div>
               </div>
 
               {/* Modal Body */}
@@ -1333,9 +1562,34 @@ export default function Admin({ onNavigate }) {
                     <p className="text-sm">Try adjusting your filters</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {getServiceSales().map((sale) => (
-                      <div key={sale.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors">
+                  <div className="space-y-6">
+                    {getGroupedSalesByEmployee().map(([employeeName, employeeSales]) => (
+                      <div key={employeeName} className="space-y-3">
+                        {/* Employee Header */}
+                        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg shadow-md z-10">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">👨‍🔧</span>
+                              <div>
+                                <h3 className="font-bold text-lg">{employeeName}</h3>
+                                <p className="text-sm text-indigo-100">
+                                  {employeeSales.length} {employeeSales.length === 1 ? 'sale' : 'sales'} •
+                                  KSh {employeeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-indigo-200">Total Revenue</div>
+                              <div className="text-xl font-bold">
+                                KSh {employeeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Employee's Sales */}
+                        {employeeSales.map((sale) => (
+                          <div key={sale.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors ml-4">
                         {editingSale === sale.id ? (
                           /* Edit Mode */
                           <div className="space-y-3">
@@ -1464,10 +1718,24 @@ export default function Admin({ onNavigate }) {
                                   {selectedServiceCategory === 'carpet' && '🧺'}
                                 </span>
                                 <div>
-                                  <div className="font-semibold text-gray-800 text-lg">
-                                    {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
-                                    {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
-                                    {selectedServiceCategory === 'carpet' && sale.carpetServiceType}
+                                  <div className="font-semibold text-gray-800 text-lg flex items-center gap-2">
+                                    <span>
+                                      {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
+                                      {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
+                                      {selectedServiceCategory === 'carpet' && sale.carpetServiceType}
+                                    </span>
+                                    {/* Return status badge for carpets */}
+                                    {selectedServiceCategory === 'carpet' && (
+                                      sale.returned ? (
+                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                          ✅ Returned
+                                        </span>
+                                      ) : (
+                                        <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full animate-pulse">
+                                          🕐 At Car Wash
+                                        </span>
+                                      )
+                                    )}
                                   </div>
                                   <div className="text-sm text-gray-600">
                                     {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Model: ${sale.vehicleModel}`}
@@ -1480,7 +1748,7 @@ export default function Admin({ onNavigate }) {
                                 <div>👤 {sale.employee}</div>
                                 <div>💳 {sale.paymentMethod}</div>
                                 <div>📅 {sale.date}</div>
-                                <div>🕐 {sale.timestamp}</div>
+                                <div>🕐 {formatTimeOnly(sale.timestamp)}</div>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1493,6 +1761,15 @@ export default function Admin({ onNavigate }) {
                               >
                                 ✏️ Edit
                               </button>
+                              {/* Mark as Returned button - only for carpets */}
+                              {selectedServiceCategory === 'carpet' && !sale.returned && (
+                                <button
+                                  onClick={() => markCarpetAsReturned(sale.id)}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                >
+                                  ✅ Mark as Returned
+                                </button>
+                              )}
                               <button
                                 onClick={() => deleteSale(sale.id)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
@@ -1502,6 +1779,8 @@ export default function Admin({ onNavigate }) {
                             </div>
                           </div>
                         )}
+                      </div>
+                        ))}
                       </div>
                     ))}
                   </div>
