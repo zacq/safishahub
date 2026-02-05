@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { employeesService, expensesService, salesService } from '../services/supabaseService';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Admin({ onNavigate }) {
   const [adminData, setAdminData] = useState({
@@ -35,6 +36,11 @@ export default function Admin({ onNavigate }) {
   const [selectedExpenseDate, setSelectedExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingExpense, setEditingExpense] = useState(null);
   const [editExpenseForm, setEditExpenseForm] = useState({ description: "", amount: "" });
+
+  // Employee performance chart state
+  const [chartPeriod, setChartPeriod] = useState('day'); // 'day', 'week', 'month', 'year'
+  const [chartDate, setChartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [chartMetric, setChartMetric] = useState('revenue'); // 'revenue', 'services', 'both'
 
   // Load all data from Supabase on mount
   useEffect(() => {
@@ -552,6 +558,56 @@ export default function Admin({ onNavigate }) {
     return { startDate, endDate };
   };
 
+  // Get employee performance data for chart
+  const getEmployeePerformanceData = () => {
+    // Get date range based on selected period
+    const { startDate, endDate } = getDateRangeForPeriod(chartPeriod, chartDate);
+
+    // Filter sales by date range
+    const filteredSales = sales.filter(sale => {
+      return sale.date >= startDate && sale.date <= endDate;
+    });
+
+    // Group sales by employee and calculate metrics
+    const employeeMetrics = {};
+
+    filteredSales.forEach(sale => {
+      const employeeName = sale.employee || 'Unknown';
+
+      if (!employeeMetrics[employeeName]) {
+        employeeMetrics[employeeName] = {
+          employee: employeeName,
+          revenue: 0,
+          services: 0,
+          vehicles: 0,
+          motorbikes: 0,
+          carpets: 0
+        };
+      }
+
+      // Add revenue
+      employeeMetrics[employeeName].revenue += parseFloat(sale.amount) || 0;
+
+      // Count services by category
+      if (sale.category === 'vehicle') {
+        employeeMetrics[employeeName].vehicles += 1;
+        employeeMetrics[employeeName].services += 1;
+      } else if (sale.category === 'motorbike') {
+        const count = parseInt(sale.numberOfMotorbikes) || 1;
+        employeeMetrics[employeeName].motorbikes += count;
+        employeeMetrics[employeeName].services += count;
+      } else if (sale.category === 'carpet') {
+        employeeMetrics[employeeName].carpets += 1;
+        employeeMetrics[employeeName].services += 1;
+      }
+    });
+
+    // Convert to array and sort by revenue (descending)
+    const performanceData = Object.values(employeeMetrics).sort((a, b) => b.revenue - a.revenue);
+
+    return performanceData;
+  };
+
   // Group sales by employee
   const getGroupedSalesByEmployee = () => {
     const serviceSales = getServiceSales();
@@ -901,6 +957,271 @@ export default function Admin({ onNavigate }) {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Employee Performance Comparison Chart */}
+          <div className="mt-6 pt-6 border-t-2 border-gray-200">
+            <h3 className="font-semibold text-gray-800 text-xl mb-4 flex items-center gap-2">
+              📊 Employee Performance Comparison
+            </h3>
+
+            {/* Chart Filters */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Period Selector */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">View Period</label>
+                  <div className="grid grid-cols-4 gap-1">
+                    <button
+                      onClick={() => setChartPeriod('day')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartPeriod === 'day'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Day
+                    </button>
+                    <button
+                      onClick={() => setChartPeriod('week')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartPeriod === 'week'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Week
+                    </button>
+                    <button
+                      onClick={() => setChartPeriod('month')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartPeriod === 'month'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Month
+                    </button>
+                    <button
+                      onClick={() => setChartPeriod('year')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartPeriod === 'year'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Year
+                    </button>
+                  </div>
+                </div>
+
+                {/* Date Picker */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Select {chartPeriod === 'day' ? 'Date' : chartPeriod === 'week' ? 'Week (any day)' : chartPeriod === 'month' ? 'Month (any day)' : 'Year (any day)'}
+                  </label>
+                  <input
+                    type="date"
+                    value={chartDate}
+                    onChange={(e) => setChartDate(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-sm"
+                  />
+                </div>
+
+                {/* Metric Selector */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Show Metric</label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => setChartMetric('revenue')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartMetric === 'revenue'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Revenue
+                    </button>
+                    <button
+                      onClick={() => setChartMetric('services')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartMetric === 'services'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Services
+                    </button>
+                    <button
+                      onClick={() => setChartMetric('both')}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        chartMetric === 'both'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      }`}
+                    >
+                      Both
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Display selected date range */}
+              <div className="mt-3 text-xs text-gray-600">
+                {(() => {
+                  const { startDate, endDate } = getDateRangeForPeriod(chartPeriod, chartDate);
+                  if (startDate === endDate) {
+                    return `📅 Showing data for: ${startDate}`;
+                  } else {
+                    return `📅 Showing data from: ${startDate} to ${endDate}`;
+                  }
+                })()}
+              </div>
+            </div>
+
+            {/* Chart */}
+            {(() => {
+              const performanceData = getEmployeePerformanceData();
+
+              if (performanceData.length === 0) {
+                return (
+                  <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+                    <div className="text-6xl mb-4">📊</div>
+                    <p className="text-lg font-medium">No performance data available</p>
+                    <p className="text-sm">Try selecting a different date or period</p>
+                  </div>
+                );
+              }
+
+              // Find top performer
+              const topPerformer = performanceData[0];
+
+              return (
+                <div>
+                  {/* Top Performer Badge */}
+                  <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">🏆</span>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Top Performer</div>
+                        <div className="text-lg font-bold text-gray-800">{topPerformer.employee}</div>
+                        <div className="text-sm text-gray-600">
+                          KSh {topPerformer.revenue.toLocaleString()} • {topPerformer.services} services
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bar Chart */}
+                  <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={performanceData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          dataKey="employee"
+                          angle={-45}
+                          textAnchor="end"
+                          height={100}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis
+                          yAxisId="left"
+                          orientation="left"
+                          stroke="#10b981"
+                          tick={{ fontSize: 12 }}
+                          label={{ value: 'Revenue (KSh)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                        />
+                        {chartMetric === 'both' && (
+                          <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            stroke="#8b5cf6"
+                            tick={{ fontSize: 12 }}
+                            label={{ value: 'Services', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
+                          />
+                        )}
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#fff',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            padding: '12px'
+                          }}
+                          formatter={(value, name) => {
+                            if (name === 'revenue') return [`KSh ${value.toLocaleString()}`, 'Revenue'];
+                            if (name === 'services') return [value, 'Services'];
+                            return [value, name];
+                          }}
+                          labelStyle={{ fontWeight: 'bold', marginBottom: '8px' }}
+                        />
+                        <Legend
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          iconType="rect"
+                        />
+
+                        {(chartMetric === 'revenue' || chartMetric === 'both') && (
+                          <Bar
+                            yAxisId="left"
+                            dataKey="revenue"
+                            fill="#10b981"
+                            name="Revenue (KSh)"
+                            radius={[8, 8, 0, 0]}
+                          />
+                        )}
+
+                        {(chartMetric === 'services' || chartMetric === 'both') && (
+                          <Bar
+                            yAxisId={chartMetric === 'both' ? 'right' : 'left'}
+                            dataKey="services"
+                            fill="#8b5cf6"
+                            name="Services"
+                            radius={[8, 8, 0, 0]}
+                          />
+                        )}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Performance Summary Table */}
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-100 border-b-2 border-gray-300">
+                        <tr>
+                          <th className="px-4 py-2 text-left font-semibold text-gray-700">Employee</th>
+                          <th className="px-4 py-2 text-right font-semibold text-gray-700">Revenue</th>
+                          <th className="px-4 py-2 text-right font-semibold text-gray-700">Services</th>
+                          <th className="px-4 py-2 text-right font-semibold text-gray-700">🚗 Vehicles</th>
+                          <th className="px-4 py-2 text-right font-semibold text-gray-700">🏍️ Motorbikes</th>
+                          <th className="px-4 py-2 text-right font-semibold text-gray-700">🧺 Carpets</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {performanceData.map((emp, index) => (
+                          <tr
+                            key={emp.employee}
+                            className={`border-b border-gray-200 hover:bg-gray-50 ${index === 0 ? 'bg-yellow-50' : ''}`}
+                          >
+                            <td className="px-4 py-3 font-medium text-gray-800">
+                              {index === 0 && <span className="mr-2">🏆</span>}
+                              {emp.employee}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-green-600">
+                              KSh {emp.revenue.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-purple-600">
+                              {emp.services}
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-700">{emp.vehicles}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{emp.motorbikes}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{emp.carpets}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Recent Transactions */}
