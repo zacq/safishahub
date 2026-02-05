@@ -1450,18 +1450,18 @@ export default function Admin({ onNavigate }) {
 
         {/* Sales History Modal */}
         {showSalesHistory && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 sm:p-6">
+                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                  <div className="flex-1 pr-2">
+                    <h2 className="text-base sm:text-2xl font-bold leading-tight">
                       {selectedServiceCategory === 'vehicle' && '🚗 Vehicle Wash Sales History'}
                       {selectedServiceCategory === 'motorbike' && '🏍️ Motorbike Wash Sales History'}
                       {selectedServiceCategory === 'carpet' && '🧺 Carpet/Rug Wash Sales History'}
                     </h2>
-                    <p className="text-sm text-purple-100 mt-1">
+                    <p className="text-xs sm:text-sm text-purple-100 mt-1">
                       {selectedEmployee !== 'all' ? `Employee: ${selectedEmployee}` : 'All Employees'}
                     </p>
                   </div>
@@ -1471,21 +1471,21 @@ export default function Admin({ onNavigate }) {
                       setEditingSale(null);
                       setEditForm({});
                     }}
-                    className="text-white hover:text-gray-200 text-3xl font-bold"
+                    className="text-white hover:text-gray-200 text-2xl sm:text-3xl font-bold flex-shrink-0"
                   >
                     ×
                   </button>
                 </div>
 
                 {/* Date/Period Filter Controls */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4 mt-3 sm:mt-4">
                   {/* Period Selector */}
                   <div>
-                    <label className="block text-sm font-medium text-purple-100 mb-2">View Period</label>
-                    <div className="flex gap-2">
+                    <label className="block text-xs sm:text-sm font-medium text-purple-100 mb-2">View Period</label>
+                    <div className="grid grid-cols-4 gap-1 sm:gap-2">
                       <button
                         onClick={() => setHistoryFilterPeriod('day')}
-                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
                           historyFilterPeriod === 'day'
                             ? 'bg-white text-purple-600'
                             : 'bg-purple-500 text-white hover:bg-purple-400'
@@ -1495,7 +1495,7 @@ export default function Admin({ onNavigate }) {
                       </button>
                       <button
                         onClick={() => setHistoryFilterPeriod('week')}
-                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
                           historyFilterPeriod === 'week'
                             ? 'bg-white text-purple-600'
                             : 'bg-purple-500 text-white hover:bg-purple-400'
@@ -1505,7 +1505,7 @@ export default function Admin({ onNavigate }) {
                       </button>
                       <button
                         onClick={() => setHistoryFilterPeriod('month')}
-                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
                           historyFilterPeriod === 'month'
                             ? 'bg-white text-purple-600'
                             : 'bg-purple-500 text-white hover:bg-purple-400'
@@ -1515,7 +1515,7 @@ export default function Admin({ onNavigate }) {
                       </button>
                       <button
                         onClick={() => setHistoryFilterPeriod('year')}
-                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
                           historyFilterPeriod === 'year'
                             ? 'bg-white text-purple-600'
                             : 'bg-purple-500 text-white hover:bg-purple-400'
@@ -1528,20 +1528,20 @@ export default function Admin({ onNavigate }) {
 
                   {/* Date Picker */}
                   <div>
-                    <label className="block text-sm font-medium text-purple-100 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-purple-100 mb-2">
                       Select {historyFilterPeriod === 'day' ? 'Date' : historyFilterPeriod === 'week' ? 'Week (any day)' : historyFilterPeriod === 'month' ? 'Month (any day)' : 'Year (any day)'}
                     </label>
                     <input
                       type="date"
                       value={historyFilterDate}
                       onChange={(e) => setHistoryFilterDate(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-white"
+                      className="w-full px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-white"
                     />
                   </div>
                 </div>
 
                 {/* Display selected date range */}
-                <div className="mt-3 text-sm text-purple-100">
+                <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-purple-100">
                   {(() => {
                     const { startDate, endDate } = getDateRangeForPeriod(historyFilterPeriod, historyFilterDate);
                     if (startDate === endDate) {
@@ -1554,33 +1554,32 @@ export default function Admin({ onNavigate }) {
               </div>
 
               {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-6">
                 {getServiceSales().length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
-                    <div className="text-6xl mb-4">📊</div>
-                    <p className="text-lg">No sales records found</p>
-                    <p className="text-sm">Try adjusting your filters</p>
+                    <div className="text-4xl sm:text-6xl mb-4">📊</div>
+                    <p className="text-base sm:text-lg">No sales records found</p>
+                    <p className="text-xs sm:text-sm">Try adjusting your filters</p>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {getGroupedSalesByEmployee().map(([employeeName, employeeSales]) => (
-                      <div key={employeeName} className="space-y-3">
+                      <div key={employeeName} className="space-y-2 sm:space-y-3">
                         {/* Employee Header */}
-                        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg shadow-md z-10">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">👨‍🔧</span>
-                              <div>
-                                <h3 className="font-bold text-lg">{employeeName}</h3>
-                                <p className="text-sm text-indigo-100">
-                                  {employeeSales.length} {employeeSales.length === 1 ? 'sale' : 'sales'} •
-                                  KSh {employeeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
+                        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg shadow-md z-10">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                              <span className="text-xl sm:text-2xl flex-shrink-0">👨‍🔧</span>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-bold text-sm sm:text-lg truncate">{employeeName}</h3>
+                                <p className="text-xs sm:text-sm text-indigo-100">
+                                  {employeeSales.length} {employeeSales.length === 1 ? 'sale' : 'sales'}
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-xs text-indigo-200">Total Revenue</div>
-                              <div className="text-xl font-bold">
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-xs text-indigo-200 hidden sm:block">Total Revenue</div>
+                              <div className="text-sm sm:text-xl font-bold">
                                 KSh {employeeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
                               </div>
                             </div>
@@ -1589,11 +1588,11 @@ export default function Admin({ onNavigate }) {
 
                         {/* Employee's Sales */}
                         {employeeSales.map((sale) => (
-                          <div key={sale.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors ml-4">
+                          <div key={sale.id} className="border-2 border-gray-200 rounded-lg p-3 sm:p-4 hover:border-purple-300 transition-colors ml-2 sm:ml-4">
                         {editingSale === sale.id ? (
                           /* Edit Mode */
                           <div className="space-y-3">
-                            <div className="grid md:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {/* Service Type */}
                               {selectedServiceCategory === 'vehicle' && (
                                 <div>
@@ -1709,55 +1708,63 @@ export default function Admin({ onNavigate }) {
                           </div>
                         ) : (
                           /* View Mode */
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-2xl">
-                                  {selectedServiceCategory === 'vehicle' && '🚗'}
-                                  {selectedServiceCategory === 'motorbike' && '🏍️'}
-                                  {selectedServiceCategory === 'carpet' && '🧺'}
-                                </span>
-                                <div>
-                                  <div className="font-semibold text-gray-800 text-lg flex items-center gap-2">
-                                    <span>
-                                      {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
-                                      {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
-                                      {selectedServiceCategory === 'carpet' && sale.carpetServiceType}
-                                    </span>
-                                    {/* Return status badge for carpets */}
-                                    {selectedServiceCategory === 'carpet' && (
-                                      sale.returned ? (
-                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                          ✅ Returned
-                                        </span>
-                                      ) : (
-                                        <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full animate-pulse">
-                                          🕐 At Car Wash
-                                        </span>
-                                      )
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Model: ${sale.vehicleModel}`}
-                                    {selectedServiceCategory === 'motorbike' && sale.numberOfMotorbikes && `Qty: ${sale.numberOfMotorbikes}`}
-                                    {selectedServiceCategory === 'carpet' && sale.size && `Size: ${sale.size}`}
-                                  </div>
+                          <div className="space-y-3">
+                            {/* Sale Info Section */}
+                            <div className="flex items-start gap-2 sm:gap-3">
+                              <span className="text-xl sm:text-2xl flex-shrink-0">
+                                {selectedServiceCategory === 'vehicle' && '🚗'}
+                                {selectedServiceCategory === 'motorbike' && '🏍️'}
+                                {selectedServiceCategory === 'carpet' && '🧺'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-gray-800 text-sm sm:text-lg flex flex-wrap items-center gap-2">
+                                  <span className="break-words">
+                                    {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
+                                    {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
+                                    {selectedServiceCategory === 'carpet' && sale.carpetServiceType}
+                                  </span>
+                                  {/* Return status badge for carpets */}
+                                  {selectedServiceCategory === 'carpet' && (
+                                    sale.returned ? (
+                                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap">
+                                        ✅ Returned
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full animate-pulse whitespace-nowrap">
+                                        🕐 At Car Wash
+                                      </span>
+                                    )
+                                  )}
+                                </div>
+                                <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                                  {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Model: ${sale.vehicleModel}`}
+                                  {selectedServiceCategory === 'motorbike' && sale.numberOfMotorbikes && `Qty: ${sale.numberOfMotorbikes}`}
+                                  {selectedServiceCategory === 'carpet' && sale.size && `Size: ${sale.size}`}
                                 </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                                <div>👤 {sale.employee}</div>
-                                <div>💳 {sale.paymentMethod}</div>
-                                <div>📅 {sale.date}</div>
-                                <div>🕐 {formatTimeOnly(sale.timestamp)}</div>
+                            </div>
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm text-gray-600">
+                              <div className="truncate">👤 {sale.employee}</div>
+                              <div className="truncate">💳 {sale.paymentMethod}</div>
+                              <div>📅 {sale.date}</div>
+                              <div>🕐 {formatTimeOnly(sale.timestamp)}</div>
+                            </div>
+
+                            {/* Amount Display */}
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
+                              <div className="text-xs sm:text-sm text-green-700 font-medium">Total Revenue</div>
+                              <div className="text-xl sm:text-2xl font-bold text-green-600">
+                                KSh {parseFloat(sale.amount).toLocaleString()}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-green-600">KSh {parseFloat(sale.amount).toLocaleString()}</div>
-                              </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-2">
                               <button
                                 onClick={() => startEditSale(sale)}
-                                className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                                className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-colors"
                               >
                                 ✏️ Edit
                               </button>
@@ -1765,14 +1772,14 @@ export default function Admin({ onNavigate }) {
                               {selectedServiceCategory === 'carpet' && !sale.returned && (
                                 <button
                                   onClick={() => markCarpetAsReturned(sale.id)}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                  className="flex-1 min-w-[140px] px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors"
                                 >
                                   ✅ Mark as Returned
                                 </button>
                               )}
                               <button
                                 onClick={() => deleteSale(sale.id)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                                className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-700 transition-colors"
                               >
                                 🗑️ Delete
                               </button>
