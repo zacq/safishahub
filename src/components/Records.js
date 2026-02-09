@@ -21,9 +21,9 @@ export default function Records({ onNavigate }) {
     price: "",
     numberOfMotorbikes: "",
     size: "",
-    vehicleServiceType: "",
-    motorbikeServiceType: "",
-    carpetServiceType: ""
+    vehicleServiceType: [],
+    motorbikeServiceType: [],
+    carpetServiceType: []
   });
 
   // Service types for vehicles (no prices associated)
@@ -111,6 +111,22 @@ export default function Records({ onNavigate }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Handle service type checkbox changes (for multi-select)
+  const handleServiceTypeCheckbox = (fieldName, service) => {
+    const currentServices = form[fieldName];
+    let updatedServices;
+
+    if (currentServices.includes(service)) {
+      // Remove service if already selected
+      updatedServices = currentServices.filter(s => s !== service);
+    } else {
+      // Add service if not selected
+      updatedServices = [...currentServices, service];
+    }
+
+    setForm({ ...form, [fieldName]: updatedServices });
+  };
+
   // Handle employee selection
   const handleEmployeeSelect = (employeeName) => {
     setSelectedEmployee(employeeName);
@@ -127,9 +143,9 @@ export default function Records({ onNavigate }) {
       price: "",
       numberOfMotorbikes: "",
       size: "",
-      vehicleServiceType: "",
-      motorbikeServiceType: "",
-      carpetServiceType: ""
+      vehicleServiceType: [],
+      motorbikeServiceType: [],
+      carpetServiceType: []
     });
   };
 
@@ -165,9 +181,9 @@ export default function Records({ onNavigate }) {
         vehicle_model: form.vehicleModel || null,
         number_of_motorbikes: form.numberOfMotorbikes ? parseInt(form.numberOfMotorbikes) : null,
         size: form.size || null,
-        vehicle_service_type: form.vehicleServiceType || null,
-        motorbike_service_type: form.motorbikeServiceType || null,
-        carpet_service_type: form.carpetServiceType || null
+        vehicle_service_type: form.vehicleServiceType.length > 0 ? form.vehicleServiceType.join(', ') : null,
+        motorbike_service_type: form.motorbikeServiceType.length > 0 ? form.motorbikeServiceType.join(', ') : null,
+        carpet_service_type: form.carpetServiceType.length > 0 ? form.carpetServiceType.join(', ') : null
       };
 
       console.log('💾 Records: Saving sale to Supabase...', newSale);
@@ -192,9 +208,9 @@ export default function Records({ onNavigate }) {
         price: "",
         numberOfMotorbikes: "",
         size: "",
-        vehicleServiceType: "",
-        motorbikeServiceType: "",
-        carpetServiceType: ""
+        vehicleServiceType: [],
+        motorbikeServiceType: [],
+        carpetServiceType: []
       });
       setSelectedEmployee("");
       setSelectedServiceType("");
@@ -223,9 +239,9 @@ export default function Records({ onNavigate }) {
       price: "",
       numberOfMotorbikes: "",
       size: "",
-      vehicleServiceType: "",
-      motorbikeServiceType: "",
-      carpetServiceType: ""
+      vehicleServiceType: [],
+      motorbikeServiceType: [],
+      carpetServiceType: []
     });
   };
 
@@ -240,9 +256,9 @@ export default function Records({ onNavigate }) {
       price: "",
       numberOfMotorbikes: "",
       size: "",
-      vehicleServiceType: "",
-      motorbikeServiceType: "",
-      carpetServiceType: ""
+      vehicleServiceType: [],
+      motorbikeServiceType: [],
+      carpetServiceType: []
     });
   };
 
@@ -530,22 +546,26 @@ export default function Records({ onNavigate }) {
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Vehicle Service Type *
+                          Vehicle Service Type * (Select all that apply)
                         </label>
-                        <select
-                          name="vehicleServiceType"
-                          value={form.vehicleServiceType}
-                          onChange={handleChange}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                          required
-                        >
-                          <option value="">Select Service Type</option>
+                        <div className="grid grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
                           {vehicleServiceTypes.map((service) => (
-                            <option key={service} value={service}>
-                              {service}
-                            </option>
+                            <label key={service} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={form.vehicleServiceType.includes(service)}
+                                onChange={() => handleServiceTypeCheckbox('vehicleServiceType', service)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{service}</span>
+                            </label>
                           ))}
-                        </select>
+                        </div>
+                        {form.vehicleServiceType.length > 0 && (
+                          <div className="mt-2 text-sm text-blue-600">
+                            ✓ Selected: {form.vehicleServiceType.join(', ')}
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -587,22 +607,26 @@ export default function Records({ onNavigate }) {
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Motorbike Service Type *
+                          Motorbike Service Type * (Select all that apply)
                         </label>
-                        <select
-                          name="motorbikeServiceType"
-                          value={form.motorbikeServiceType}
-                          onChange={handleChange}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                          required
-                        >
-                          <option value="">Select Service Type</option>
+                        <div className="grid grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
                           {motorbikeServiceTypes.map((service) => (
-                            <option key={service} value={service}>
-                              {service}
-                            </option>
+                            <label key={service} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={form.motorbikeServiceType.includes(service)}
+                                onChange={() => handleServiceTypeCheckbox('motorbikeServiceType', service)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{service}</span>
+                            </label>
                           ))}
-                        </select>
+                        </div>
+                        {form.motorbikeServiceType.length > 0 && (
+                          <div className="mt-2 text-sm text-blue-600">
+                            ✓ Selected: {form.motorbikeServiceType.join(', ')}
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -646,22 +670,26 @@ export default function Records({ onNavigate }) {
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Carpet Service Type *
+                          Carpet Service Type * (Select all that apply)
                         </label>
-                        <select
-                          name="carpetServiceType"
-                          value={form.carpetServiceType}
-                          onChange={handleChange}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                          required
-                        >
-                          <option value="">Select Service Type</option>
+                        <div className="grid grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
                           {carpetServiceTypes.map((service) => (
-                            <option key={service} value={service}>
-                              {service}
-                            </option>
+                            <label key={service} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={form.carpetServiceType.includes(service)}
+                                onChange={() => handleServiceTypeCheckbox('carpetServiceType', service)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{service}</span>
+                            </label>
                           ))}
-                        </select>
+                        </div>
+                        {form.carpetServiceType.length > 0 && (
+                          <div className="mt-2 text-sm text-blue-600">
+                            ✓ Selected: {form.carpetServiceType.join(', ')}
+                          </div>
+                        )}
                       </div>
 
                       <div>
