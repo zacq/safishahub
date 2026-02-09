@@ -548,21 +548,21 @@ export default function Records({ onNavigate }) {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Vehicle Service Type * (Select all that apply)
                         </label>
-                        <div className="grid grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
                           {vehicleServiceTypes.map((service) => (
-                            <label key={service} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                            <label key={service} className="flex items-center gap-2 p-3 sm:p-2 hover:bg-white rounded cursor-pointer transition-colors min-h-[44px]">
                               <input
                                 type="checkbox"
                                 checked={form.vehicleServiceType.includes(service)}
                                 onChange={() => handleServiceTypeCheckbox('vehicleServiceType', service)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
                               />
                               <span className="text-sm text-gray-700">{service}</span>
                             </label>
                           ))}
                         </div>
                         {form.vehicleServiceType.length > 0 && (
-                          <div className="mt-2 text-sm text-blue-600">
+                          <div className="mt-2 text-sm text-blue-600 break-words">
                             ✓ Selected: {form.vehicleServiceType.join(', ')}
                           </div>
                         )}
@@ -609,21 +609,21 @@ export default function Records({ onNavigate }) {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Motorbike Service Type * (Select all that apply)
                         </label>
-                        <div className="grid grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
                           {motorbikeServiceTypes.map((service) => (
-                            <label key={service} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                            <label key={service} className="flex items-center gap-2 p-3 sm:p-2 hover:bg-white rounded cursor-pointer transition-colors min-h-[44px]">
                               <input
                                 type="checkbox"
                                 checked={form.motorbikeServiceType.includes(service)}
                                 onChange={() => handleServiceTypeCheckbox('motorbikeServiceType', service)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
                               />
                               <span className="text-sm text-gray-700">{service}</span>
                             </label>
                           ))}
                         </div>
                         {form.motorbikeServiceType.length > 0 && (
-                          <div className="mt-2 text-sm text-blue-600">
+                          <div className="mt-2 text-sm text-blue-600 break-words">
                             ✓ Selected: {form.motorbikeServiceType.join(', ')}
                           </div>
                         )}
@@ -672,21 +672,21 @@ export default function Records({ onNavigate }) {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Carpet Service Type * (Select all that apply)
                         </label>
-                        <div className="grid grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
                           {carpetServiceTypes.map((service) => (
-                            <label key={service} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                            <label key={service} className="flex items-center gap-2 p-3 sm:p-2 hover:bg-white rounded cursor-pointer transition-colors min-h-[44px]">
                               <input
                                 type="checkbox"
                                 checked={form.carpetServiceType.includes(service)}
                                 onChange={() => handleServiceTypeCheckbox('carpetServiceType', service)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
                               />
                               <span className="text-sm text-gray-700">{service}</span>
                             </label>
                           ))}
                         </div>
                         {form.carpetServiceType.length > 0 && (
-                          <div className="mt-2 text-sm text-blue-600">
+                          <div className="mt-2 text-sm text-blue-600 break-words">
                             ✓ Selected: {form.carpetServiceType.join(', ')}
                           </div>
                         )}
