@@ -16,53 +16,14 @@ export default function Autodetailing({ onNavigate }) {
     carpetType: "",
     carpetSize: "",
     customerName: "",
-    customerPhone: ""
+    customerPhone: "",
+    customerNeeds: ""
   });
-
-  // Vehicle models dropdown list
-  const vehicleModels = [
-    "Toyota Corolla",
-    "Toyota Camry",
-    "Toyota RAV4",
-    "Toyota Land Cruiser",
-    "Toyota Hilux",
-    "Toyota Prado",
-    "Honda Civic",
-    "Honda Accord",
-    "Honda CR-V",
-    "Honda Fit",
-    "Nissan X-Trail",
-    "Nissan Patrol",
-    "Nissan Note",
-    "Mazda Demio",
-    "Mazda Axela",
-    "Mazda CX-5",
-    "Subaru Impreza",
-    "Subaru Forester",
-    "Subaru Outback",
-    "Mitsubishi Outlander",
-    "Mitsubishi Pajero",
-    "Mercedes-Benz C-Class",
-    "Mercedes-Benz E-Class",
-    "BMW 3 Series",
-    "BMW 5 Series",
-    "BMW X5",
-    "Audi A4",
-    "Audi Q5",
-    "Volkswagen Golf",
-    "Volkswagen Passat",
-    "Range Rover Sport",
-    "Range Rover Evoque",
-    "Land Rover Discovery",
-    "Peugeot 3008",
-    "Peugeot 5008",
-    "Other"
-  ];
 
   // Load leads from Supabase
   useEffect(() => {
     loadLeads();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load leads function
   const loadLeads = async () => {
@@ -109,6 +70,9 @@ export default function Autodetailing({ onNavigate }) {
         leadData.carpet_size = form.carpetSize;
       }
 
+      // Add customer needs
+      leadData.customer_needs = form.customerNeeds;
+
       console.log('💾 Autodetailing: Saving lead to Supabase...', leadData);
 
       // Save to Supabase
@@ -126,7 +90,8 @@ export default function Autodetailing({ onNavigate }) {
         carpetType: "",
         carpetSize: "",
         customerName: "",
-        customerPhone: ""
+        customerPhone: "",
+        customerNeeds: ""
       });
 
       setShowSuccess(true);
@@ -151,7 +116,8 @@ export default function Autodetailing({ onNavigate }) {
       carpetType: lead.carpet_type || '',
       carpetSize: lead.carpet_size || '',
       customerName: lead.customer_name || '',
-      customerPhone: lead.customer_phone || ''
+      customerPhone: lead.customer_phone || '',
+      customerNeeds: lead.customer_needs || ''
     });
   };
 
@@ -171,7 +137,8 @@ export default function Autodetailing({ onNavigate }) {
       const updateData = {
         asset_type: editForm.assetType,
         customer_name: editForm.customerName,
-        customer_phone: editForm.customerPhone
+        customer_phone: editForm.customerPhone,
+        customer_needs: editForm.customerNeeds
       };
 
       // Add asset-specific fields
@@ -324,27 +291,21 @@ export default function Autodetailing({ onNavigate }) {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vehicle Model *
+                      Vehicle Model
                     </label>
-                    <select
+                    <input
+                      type="text"
                       name="vehicleModel"
                       value={form.vehicleModel}
                       onChange={handleChange}
+                      placeholder="e.g., Toyota Corolla, Honda Civic"
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
-                      required
-                    >
-                      <option value="">Select Vehicle Model</option>
-                      {vehicleModels.map((model) => (
-                        <option key={model} value={model}>
-                          {model}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Registration Number *
+                      Registration Number
                     </label>
                     <input
                       type="text"
@@ -353,7 +314,6 @@ export default function Autodetailing({ onNavigate }) {
                       onChange={handleChange}
                       placeholder="e.g., KCA 123A"
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none font-mono uppercase"
-                      required
                     />
                   </div>
                 </>
@@ -363,7 +323,7 @@ export default function Autodetailing({ onNavigate }) {
               {assetType === 'motorbike' && (
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Motorbike Model *
+                    Motorbike Model
                   </label>
                   <input
                     type="text"
@@ -372,7 +332,6 @@ export default function Autodetailing({ onNavigate }) {
                     onChange={handleChange}
                     placeholder="e.g., Honda CB500X, Yamaha MT-07"
                     className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
-                    required
                   />
                 </div>
               )}
@@ -382,14 +341,13 @@ export default function Autodetailing({ onNavigate }) {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Carpet Type *
+                      Carpet Type
                     </label>
                     <select
                       name="carpetType"
                       value={form.carpetType}
                       onChange={handleChange}
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
-                      required
                     >
                       <option value="">Select Carpet Type</option>
                       <option value="Persian Rug">Persian Rug</option>
@@ -403,14 +361,13 @@ export default function Autodetailing({ onNavigate }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Carpet Size *
+                      Carpet Size
                     </label>
                     <select
                       name="carpetSize"
                       value={form.carpetSize}
                       onChange={handleChange}
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
-                      required
                     >
                       <option value="">Select Size</option>
                       <option value="Small (up to 6x4 ft)">Small (up to 6x4 ft)</option>
@@ -425,7 +382,7 @@ export default function Autodetailing({ onNavigate }) {
               {/* Customer Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Customer Name *
+                  Customer Name
                 </label>
                 <input
                   type="text"
@@ -434,14 +391,13 @@ export default function Autodetailing({ onNavigate }) {
                   onChange={handleChange}
                   placeholder="Enter customer name"
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
-                  required
                 />
               </div>
 
               {/* Customer Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Customer Phone *
+                  Customer Phone
                 </label>
                 <input
                   type="tel"
@@ -450,9 +406,23 @@ export default function Autodetailing({ onNavigate }) {
                   onChange={handleChange}
                   placeholder="e.g., 0712345678"
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
-                  required
                 />
               </div>
+            </div>
+
+            {/* Customer Needs - Full Width */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Customer Needs
+              </label>
+              <textarea
+                name="customerNeeds"
+                value={form.customerNeeds}
+                onChange={handleChange}
+                placeholder="Describe what the customer needs (e.g., full interior detailing, paint correction, ceramic coating, etc.)"
+                rows="4"
+                className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none resize-none"
+              />
             </div>
 
             {/* Submit Button */}
@@ -541,16 +511,13 @@ export default function Autodetailing({ onNavigate }) {
                           <>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Vehicle Model</label>
-                              <select
+                              <input
+                                type="text"
                                 value={editForm.vehicleModel}
                                 onChange={(e) => setEditForm({ ...editForm, vehicleModel: e.target.value })}
+                                placeholder="e.g., Toyota Corolla"
                                 className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none text-sm"
-                              >
-                                <option value="">Select Vehicle Model</option>
-                                {vehicleModels.map((model) => (
-                                  <option key={model} value={model}>{model}</option>
-                                ))}
-                              </select>
+                              />
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Registration Number</label>
@@ -634,6 +601,18 @@ export default function Autodetailing({ onNavigate }) {
                         </div>
                       </div>
 
+                      {/* Customer Needs - Full Width */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Customer Needs</label>
+                        <textarea
+                          value={editForm.customerNeeds}
+                          onChange={(e) => setEditForm({ ...editForm, customerNeeds: e.target.value })}
+                          placeholder="Describe what the customer needs"
+                          rows="3"
+                          className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none resize-none text-sm"
+                        />
+                      </div>
+
                       <div className="flex gap-2 justify-end">
                         <button
                           onClick={cancelEditLead}
@@ -696,16 +675,24 @@ export default function Autodetailing({ onNavigate }) {
                         </div>
 
                         {/* Customer Details */}
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                           <div>
                             <span className="text-gray-500">👤 </span>
-                            <span className="font-medium text-gray-800">{entry.customer_name || entry.customerName}</span>
+                            <span className="font-medium text-gray-800">{entry.customer_name || entry.customerName || 'N/A'}</span>
                           </div>
                           <div>
                             <span className="text-gray-500">📱 </span>
-                            <span className="text-gray-700">{entry.customer_phone || entry.customerPhone}</span>
+                            <span className="text-gray-700">{entry.customer_phone || entry.customerPhone || 'N/A'}</span>
                           </div>
                         </div>
+
+                        {/* Customer Needs */}
+                        {entry.customer_needs && (
+                          <div className="mb-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="text-xs font-medium text-blue-800 mb-1">💡 Customer Needs:</div>
+                            <div className="text-sm text-gray-700">{entry.customer_needs}</div>
+                          </div>
+                        )}
 
                         {/* Date */}
                         <div className="text-xs text-gray-500 mt-2">
