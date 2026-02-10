@@ -678,11 +678,11 @@ export default function Autodetailing({ onNavigate }) {
                         <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                           <div>
                             <span className="text-gray-500">👤 </span>
-                            <span className="font-medium text-gray-800">{entry.customer_name || entry.customerName || 'N/A'}</span>
+                            <span className="font-medium text-gray-800">{entry.customer_name || 'N/A'}</span>
                           </div>
                           <div>
                             <span className="text-gray-500">📱 </span>
-                            <span className="text-gray-700">{entry.customer_phone || entry.customerPhone || 'N/A'}</span>
+                            <span className="text-gray-700">{entry.customer_phone || 'N/A'}</span>
                           </div>
                         </div>
 
@@ -694,18 +694,25 @@ export default function Autodetailing({ onNavigate }) {
                           </div>
                         )}
 
-                        {/* Date */}
-                        <div className="text-xs text-gray-500 mt-2">
-                          📅 {entry.created_at
-                            ? new Date(entry.created_at).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
-                            : entry.timestamp || 'N/A'}
-                        </div>
+                        {/* Date - Only show if available */}
+                        {(entry.created_at || entry.date) && (
+                          <div className="text-xs text-gray-500 mt-2">
+                            📅 {entry.created_at
+                              ? new Date(entry.created_at).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : entry.date ? new Date(entry.date).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })
+                              : ''}
+                          </div>
+                        )}
                       </div>
 
                       {/* Action Buttons */}
