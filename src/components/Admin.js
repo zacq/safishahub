@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { employeesService, expensesService, salesService } from '../services/supabaseService';
+import { employeesService, expensesService, salesService, notesService } from '../services/supabaseService';
+import { supabase } from '../config/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Admin({ onNavigate }) {
@@ -46,27 +47,37 @@ export default function Admin({ onNavigate }) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load employees and expenses in parallel
-        const [employees, expenses] = await Promise.all([
+        const [employees, expenses, notes] = await Promise.all([
           employeesService.getAll(),
-          expensesService.getAll()
+          expensesService.getAll(),
+          notesService.getAll()
         ]);
-
-        setAdminData(prev => ({
-          ...prev,
-          employees: employees,
-          expenses: expenses
-        }));
+        setAdminData(prev => ({ ...prev, employees, expenses, notes }));
       } catch (error) {
         console.error('Error loading data:', error);
-        // Fallback to localStorage
         const saved = localStorage.getItem("adminData");
-        if (saved) {
-          setAdminData(JSON.parse(saved));
-        }
+        if (saved) setAdminData(JSON.parse(saved));
       }
     };
     loadData();
+  }, []);
+
+  // Supabase Realtime: update sales list live when any device records a sale
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase
+      .channel('admin-sales-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales' }, payload => {
+        setSales(prev => [payload.new, ...prev]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sales' }, payload => {
+        setSales(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'sales' }, payload => {
+        setSales(prev => prev.filter(s => s.id !== payload.old.id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // Load sales data from Supabase on mount
@@ -264,31 +275,29 @@ export default function Admin({ onNavigate }) {
     }
   };
 
-  // Add note
-  const addNote = (e) => {
+  // Add note — saves to Supabase
+  const addNote = async (e) => {
     e.preventDefault();
-    if (noteForm.content) {
-      const newNote = {
-        id: Date.now().toString(),
-        category: noteForm.category,
-        content: noteForm.content,
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString()
-      };
-      setAdminData({
-        ...adminData,
-        notes: [newNote, ...adminData.notes]
-      });
+    if (!noteForm.content) return;
+    try {
+      const saved = await notesService.create({ category: noteForm.category, content: noteForm.content });
+      setAdminData(prev => ({ ...prev, notes: [saved, ...prev.notes] }));
       setNoteForm({ category: "Incident", content: "" });
+    } catch (error) {
+      console.error('Error saving note:', error);
+      alert('Failed to save note. Please try again.');
     }
   };
 
-  // Delete note
-  const deleteNote = (id) => {
-    setAdminData({
-      ...adminData,
-      notes: adminData.notes.filter(note => note.id !== id)
-    });
+  // Delete note — removes from Supabase
+  const deleteNote = async (id) => {
+    try {
+      await notesService.delete(id);
+      setAdminData(prev => ({ ...prev, notes: prev.notes.filter(n => n.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Failed to delete note. Please try again.');
+    }
   };
 
   // Handle employee image upload
@@ -788,6 +797,47 @@ export default function Admin({ onNavigate }) {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
+
+        {/* Carpet Pending Pickup Banner */}
+        {(() => {
+          const pending = sales.filter(s => s.category === 'carpet' && !s.returned);
+          if (pending.length === 0) return null;
+          return (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-4">
+              <h3 className="text-lg font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                🧺 Carpets Awaiting Pickup
+                <span className="bg-amber-400 text-white text-sm font-bold px-2 py-0.5 rounded-full">{pending.length}</span>
+              </h3>
+              <div className="space-y-2">
+                {pending.map(s => (
+                  <div key={s.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-200">
+                    <div>
+                      <span className="font-medium text-gray-800">{s.size || 'Carpet'}</span>
+                      <span className="text-sm text-gray-500 ml-2">• {s.employee} • {s.date}</span>
+                      {s.carpet_service_type && <span className="text-sm text-gray-500 ml-2">• {s.carpet_service_type}</span>}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-green-600">KSh {parseFloat(s.amount).toLocaleString()}</span>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm('Mark this carpet as returned to the customer?')) return;
+                          try {
+                            await salesService.markAsReturned(s.id);
+                            setSales(prev => prev.map(x => x.id === s.id ? { ...x, returned: true } : x));
+                          } catch (err) { alert('Failed to update. Try again.'); }
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded-lg transition-colors"
+                      >
+                        Mark Returned
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Analytics Dashboard */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-semibold mb-6 flex items-center">

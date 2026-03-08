@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { salesService } from "../services/supabaseService";
-import { employeesService } from "../services/supabaseService";
+import { salesService, employeesService, servicesService } from "../services/supabaseService";
 
 export default function Records({ onNavigate }) {
   const [sales, setSales] = useState([]);
@@ -9,11 +8,13 @@ export default function Records({ onNavigate }) {
   const [selectedServiceType, setSelectedServiceType] = useState(""); // 'Vehicle Wash', 'Motorbike Wash', 'Carpet/Rug Wash'
   const [loading, setLoading] = useState(false);
   const [timeFilter, setTimeFilter] = useState("day"); // 'day', 'week', 'month', 'year'
+  const [lastSavedSale, setLastSavedSale] = useState(null); // for WhatsApp share after save
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     description: "",
     amount: "",
     paymentMethod: "Cash",
+    mpesaRef: "",
     category: "",
     employee: "",
     serviceType: "",
@@ -26,36 +27,16 @@ export default function Records({ onNavigate }) {
     carpetServiceType: []
   });
 
-  // Service types for vehicles (no prices associated)
-  const vehicleServiceTypes = [
-    "Exterior Wash",
-    "Interior Clean",
-    "Full Detail",
-    "Vacuum",
-    "Buffing",
-    "Waxing",
-    "Polish"
-  ];
-
-  // Service types for motorbikes (no prices associated)
-  const motorbikeServiceTypes = [
-    "Basic Wash",
-    "Deep Clean",
-    "Polish",
-    "Chain Lubrication",
-    "Full Detail",
-    "Engine Clean"
-  ];
-
-  // Service types for carpets/rugs (no prices associated)
-  const carpetServiceTypes = [
-    "Deep Clean",
-    "Stain Removal",
-    "Dry Cleaning",
-    "Steam Cleaning",
-    "Odor Removal",
-    "Scotchgard Protection"
-  ];
+  // Service type lists — loaded from Supabase, fallback to hardcoded
+  const [vehicleServiceTypes, setVehicleServiceTypes] = useState([
+    "Exterior Wash", "Interior Clean", "Full Detail", "Vacuum", "Buffing", "Waxing", "Polish"
+  ]);
+  const [motorbikeServiceTypes, setMotorbikeServiceTypes] = useState([
+    "Basic Wash", "Deep Clean", "Polish", "Chain Lubrication", "Full Detail", "Engine Clean"
+  ]);
+  const [carpetServiceTypes, setCarpetServiceTypes] = useState([
+    "Deep Clean", "Stain Removal", "Dry Cleaning", "Steam Cleaning", "Odor Removal", "Scotchgard Protection"
+  ]);
 
   // Carpet/Rug sizes
   const carpetSizes = [
@@ -71,39 +52,78 @@ export default function Records({ onNavigate }) {
   ];
 
   // Load sales from Supabase
-  useEffect(() => {
-    console.log('🔍 Records: Loading sales from Supabase...');
-    loadSales();
-  }, []);
+  useEffect(() => { loadSales(); }, []);
 
   // Load employees from Supabase
+  useEffect(() => { loadEmployees(); }, []);
+
+  // Load dynamic service types from Supabase
   useEffect(() => {
-    console.log('🔍 Records: Loading employees from Supabase...');
-    loadEmployees();
+    servicesService.getAll().then(data => {
+      if (!data) return; // Supabase not configured, keep hardcoded fallback
+      const byCategory = data.reduce((acc, s) => {
+        acc[s.category] = acc[s.category] || [];
+        acc[s.category].push(s.name);
+        return acc;
+      }, {});
+      if (byCategory.vehicle?.length) setVehicleServiceTypes(byCategory.vehicle);
+      if (byCategory.motorbike?.length) setMotorbikeServiceTypes(byCategory.motorbike);
+      if (byCategory.carpet?.length) setCarpetServiceTypes(byCategory.carpet);
+    });
   }, []);
 
   // Load sales function
   const loadSales = async () => {
     try {
-      console.log('📊 Records: Calling salesService.getAll()...');
       const data = await salesService.getAll();
-      console.log('✅ Records: Sales loaded:', data);
       setSales(data);
     } catch (error) {
-      console.error('❌ Records: Error loading sales:', error);
+      console.error('Error loading sales:', error);
     }
   };
 
   // Load employees function
   const loadEmployees = async () => {
     try {
-      console.log('👥 Records: Calling employeesService.getAll()...');
       const data = await employeesService.getAll();
-      console.log('✅ Records: Employees loaded:', data);
       setEmployees(data);
     } catch (error) {
-      console.error('❌ Records: Error loading employees:', error);
+      console.error('Error loading employees:', error);
     }
+  };
+
+  // CSV export for currently filtered sales
+  const exportCSV = () => {
+    const filtered = filterSalesByTime(sales, timeFilter);
+    const headers = ['Date', 'Employee', 'Category', 'Service Type', 'Details', 'Amount (KSh)', 'Payment', 'M-Pesa Ref'];
+    const rows = filtered.map(s => [
+      s.date,
+      s.employee,
+      s.category,
+      s.service_type,
+      s.vehicle_model || (s.number_of_motorbikes ? `${s.number_of_motorbikes} bike(s)` : '') || s.size || '',
+      parseFloat(s.amount || 0).toFixed(2),
+      s.payment_method,
+      s.mpesa_ref || ''
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `safishahub-sales-${timeFilter}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Build WhatsApp receipt URL for a sale
+  const getWhatsAppReceiptUrl = (sale, customerPhone) => {
+    const services = [sale.vehicle_service_type, sale.motorbike_service_type, sale.carpet_service_type].filter(Boolean).join(', ');
+    const detail = sale.vehicle_model || (sale.number_of_motorbikes ? `${sale.number_of_motorbikes} motorbike(s)` : '') || (sale.size ? `${sale.size} carpet` : '');
+    const mpesa = sale.mpesa_ref ? `\nM-Pesa Ref: ${sale.mpesa_ref}` : '';
+    const msg = `*Safisha Hub Receipt*\n📅 ${sale.date}\n🧽 ${sale.service_type}${detail ? ` – ${detail}` : ''}${services ? `\n   Services: ${services}` : ''}\n💰 KSh ${parseFloat(sale.amount).toLocaleString()} (${sale.payment_method})${mpesa}\n\nThank you for choosing Safisha Hub! 🚗✨`;
+    const phone = customerPhone ? customerPhone.replace(/\D/g, '') : '';
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
   // Handle form input changes
@@ -127,26 +147,30 @@ export default function Records({ onNavigate }) {
     setForm({ ...form, [fieldName]: updatedServices });
   };
 
+  const blankForm = (employee = "") => ({
+    date: new Date().toISOString().split('T')[0],
+    description: "",
+    amount: "",
+    paymentMethod: "Cash",
+    mpesaRef: "",
+    category: "",
+    employee,
+    serviceType: "",
+    vehicleModel: "",
+    price: "",
+    numberOfMotorbikes: "",
+    size: "",
+    vehicleServiceType: [],
+    motorbikeServiceType: [],
+    carpetServiceType: []
+  });
+
   // Handle employee selection
   const handleEmployeeSelect = (employeeName) => {
     setSelectedEmployee(employeeName);
     setSelectedServiceType("");
-    setForm({
-      date: new Date().toISOString().split('T')[0],
-      description: "",
-      amount: "",
-      paymentMethod: "Cash",
-      category: "",
-      employee: employeeName,
-      serviceType: "",
-      vehicleModel: "",
-      price: "",
-      numberOfMotorbikes: "",
-      size: "",
-      vehicleServiceType: [],
-      motorbikeServiceType: [],
-      carpetServiceType: []
-    });
+    setLastSavedSale(null);
+    setForm(blankForm(employeeName));
   };
 
   // Handle service type selection
@@ -175,6 +199,7 @@ export default function Records({ onNavigate }) {
         description: form.description || `${form.serviceType} - ${form.employee}`,
         amount: parseFloat(form.price),
         payment_method: form.paymentMethod,
+        mpesa_ref: form.paymentMethod === 'M-Pesa' ? (form.mpesaRef || null) : null,
         category: form.category,
         employee: form.employee,
         service_type: form.serviceType,
@@ -186,38 +211,13 @@ export default function Records({ onNavigate }) {
         carpet_service_type: form.carpetServiceType.length > 0 ? form.carpetServiceType.join(', ') : null
       };
 
-      console.log('💾 Records: Saving sale to Supabase...', newSale);
-
-      // Save to Supabase
       const savedSale = await salesService.create(newSale);
-      console.log('✅ Records: Sale saved successfully!', savedSale);
-
-      // Reload sales to get updated list
       await loadSales();
-
-      // Reset form and go back to employee selection
-      setForm({
-        date: new Date().toISOString().split('T')[0],
-        description: "",
-        amount: "",
-        paymentMethod: "Cash",
-        category: "",
-        employee: "",
-        serviceType: "",
-        vehicleModel: "",
-        price: "",
-        numberOfMotorbikes: "",
-        size: "",
-        vehicleServiceType: [],
-        motorbikeServiceType: [],
-        carpetServiceType: []
-      });
-      setSelectedEmployee("");
-      setSelectedServiceType("");
+      setLastSavedSale(savedSale);
+      // Keep employee + service selected so user sees the success panel, then can record another
     } catch (error) {
-      console.error('❌ Error saving sale:', error);
-      console.error('Error details:', error.message, error);
-      alert(`Error saving sale: ${error.message || 'Please try again.'}\n\nCheck console for details.`);
+      console.error('Error saving sale:', error);
+      alert(`Error saving sale: ${error.message || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -227,39 +227,15 @@ export default function Records({ onNavigate }) {
   const goBackToEmployeeSelection = () => {
     setSelectedEmployee("");
     setSelectedServiceType("");
-    setForm({
-      date: new Date().toISOString().split('T')[0],
-      description: "",
-      amount: "",
-      paymentMethod: "Cash",
-      category: "",
-      employee: "",
-      serviceType: "",
-      vehicleModel: "",
-      price: "",
-      numberOfMotorbikes: "",
-      size: "",
-      vehicleServiceType: [],
-      motorbikeServiceType: [],
-      carpetServiceType: []
-    });
+    setLastSavedSale(null);
+    setForm(blankForm());
   };
 
   // Go back to service type selection
   const goBackToServiceTypeSelection = () => {
     setSelectedServiceType("");
-    setForm({
-      ...form,
-      serviceType: "",
-      category: "",
-      vehicleModel: "",
-      price: "",
-      numberOfMotorbikes: "",
-      size: "",
-      vehicleServiceType: [],
-      motorbikeServiceType: [],
-      carpetServiceType: []
-    });
+    setLastSavedSale(null);
+    setForm({ ...blankForm(form.employee), employee: form.employee });
   };
 
   // Delete sale
@@ -541,6 +517,23 @@ export default function Records({ onNavigate }) {
                     </div>
                   </div>
 
+                  {/* M-Pesa Reference Number */}
+                  {form.paymentMethod === 'M-Pesa' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        M-Pesa Reference (optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="mpesaRef"
+                        value={form.mpesaRef}
+                        onChange={handleChange}
+                        placeholder="e.g. QKL7X2ABCD"
+                        className="w-full p-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none bg-green-50"
+                      />
+                    </div>
+                  )}
+
                   {/* Vehicle-Specific Fields */}
                   {form.category === 'vehicle' && (
                     <>
@@ -740,6 +733,35 @@ export default function Records({ onNavigate }) {
                   {loading ? '⏳ Saving...' : '💰 Record Sale'}
                 </button>
               </form>
+
+              {/* Success panel with WhatsApp share */}
+              {lastSavedSale && (
+                <div className="mt-4 p-4 bg-green-50 border-2 border-green-300 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">✅</span>
+                    <div>
+                      <p className="font-semibold text-green-800">Sale recorded! KSh {parseFloat(lastSavedSale.amount).toLocaleString()}</p>
+                      <p className="text-sm text-green-600">{lastSavedSale.payment_method}{lastSavedSale.mpesa_ref ? ` • Ref: ${lastSavedSale.mpesa_ref}` : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <a
+                      href={getWhatsAppReceiptUrl(lastSavedSale, '')}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                    >
+                      📲 Share WhatsApp Receipt
+                    </a>
+                    <button
+                      onClick={() => { setLastSavedSale(null); setForm(blankForm(selectedEmployee)); }}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                    >
+                      + Record Another
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -747,9 +769,9 @@ export default function Records({ onNavigate }) {
         {/* Sales History Dashboard */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           {/* Time Filter Tabs */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <h2 className="text-xl font-semibold">📊 Sales History</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {['day', 'week', 'month', 'year'].map(period => (
                 <button
                   key={period}
@@ -762,6 +784,13 @@ export default function Records({ onNavigate }) {
                   {period.charAt(0).toUpperCase() + period.slice(1)}
                 </button>
               ))}
+              <button
+                onClick={exportCSV}
+                className="px-4 py-2 rounded-lg font-medium bg-gray-700 text-white hover:bg-gray-800 transition-colors text-sm"
+                title="Export visible sales to CSV"
+              >
+                ⬇ CSV
+              </button>
             </div>
           </div>
 

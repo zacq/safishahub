@@ -542,6 +542,30 @@ export const notesService = {
   }
 };
 
+// ==================== SERVICES (dynamic service types) ====================
+
+export const servicesService = {
+  async getAll() {
+    if (!isSupabaseConfigured() || !supabase) {
+      return null; // caller falls back to hardcoded lists
+    }
+
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('active', true)
+      .order('category')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching services:', error);
+      return null;
+    }
+
+    return data;
+  }
+};
+
 // ==================== LEADS ====================
 
 export const leadsService = {
