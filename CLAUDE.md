@@ -47,8 +47,7 @@ Six tables — no others. `customers` and `inventory` were dropped (empty, lefto
 | `vehicle_service_type` | text | comma-separated |
 | `motorbike_service_type` | text | comma-separated |
 | `number_of_motorbikes` | integer | nullable |
-| `carpet_service_type` | text | comma-separated |
-| `size` | text | carpet size (`8x11`, `6x10`, `5x7`, `rug`) |
+| `size` | text | carpet size (`8x11`, `7x10`, `5x7`, `rug`) |
 | `description` | text | legacy, nullable |
 | `returned` | boolean | carpet return flag |
 | `returned_date` | timestamptz | nullable |
@@ -175,7 +174,6 @@ Dependencies used internally: `browser-image-compression` (for `carpetImagesServ
 | `vehicle_service_type` | `vehicleServiceType` |
 | `motorbike_service_type` | `motorbikeServiceType` |
 | `number_of_motorbikes` | `numberOfMotorbikes` |
-| `carpet_service_type` | `carpetServiceType` |
 | `carpet_images` | `carpetImages` |
 | `payment_method` | `paymentMethod` |
 | `service_type` | `serviceType` |
@@ -208,9 +206,9 @@ Fetched from `services` table at component mount in Records.js and Autodetailing
 
 ### Carpet sizes (standardized)
 
-Values: `8x11` / `6x10` / `5x7` / `rug`. Defined in:
-- `carpetSizes` array in Records.js (line ~42)
-- Hardcoded `<option>` blocks in Autodetailing.js (add form + edit form — two places)
+Values: `8x11` / `7x10` / `5x7` / `rug`. Prices (KSh): 8x11=1300, 7x10=900, 5x7=600, rug=manual. Defined in:
+- `carpetSizes` array in Records.js — includes `price` field; size selection auto-fills the price input
+- Hardcoded `<option>` blocks in Autodetailing.js (add form + edit form — two places, no pricing needed for leads)
 
 All three must be updated together when sizes change.
 

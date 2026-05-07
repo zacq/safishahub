@@ -148,7 +148,7 @@ export default function Admin({ onNavigate }) {
 
     const carpetServiceBreakdown = {};
     carpetSales.forEach(s => {
-      const service = s.carpetServiceType || "Unknown";
+      const service = s.size || "Unknown";
       carpetServiceBreakdown[service] = (carpetServiceBreakdown[service] || 0) + 1;
     });
 
@@ -642,7 +642,6 @@ export default function Admin({ onNavigate }) {
       amount: sale.amount,
       vehicleServiceType: sale.vehicleServiceType || '',
       motorbikeServiceType: sale.motorbikeServiceType || '',
-      carpetServiceType: sale.carpetServiceType || '',
       vehicleModel: sale.vehicleModel || '',
       numberOfMotorbikes: sale.numberOfMotorbikes || '',
       size: sale.size || '',
@@ -677,7 +676,6 @@ export default function Admin({ onNavigate }) {
         updateData.motorbike_service_type = editForm.motorbikeServiceType;
         if (editForm.numberOfMotorbikes) updateData.number_of_motorbikes = editForm.numberOfMotorbikes;
       } else if (selectedServiceCategory === 'carpet') {
-        updateData.carpet_service_type = editForm.carpetServiceType;
         if (editForm.size) updateData.size = editForm.size;
       }
 
@@ -701,7 +699,6 @@ export default function Admin({ onNavigate }) {
         localUpdateData.motorbikeServiceType = editForm.motorbikeServiceType;
         if (editForm.numberOfMotorbikes) localUpdateData.numberOfMotorbikes = editForm.numberOfMotorbikes;
       } else if (selectedServiceCategory === 'carpet') {
-        localUpdateData.carpetServiceType = editForm.carpetServiceType;
         if (editForm.size) localUpdateData.size = editForm.size;
       }
 
@@ -814,7 +811,6 @@ export default function Admin({ onNavigate }) {
                     <div>
                       <span className="font-medium text-gray-800">{s.size || 'Carpet'}</span>
                       <span className="text-sm text-gray-500 ml-2">• {s.employee} • {s.date}</span>
-                      {s.carpet_service_type && <span className="text-sm text-gray-500 ml-2">• {s.carpet_service_type}</span>}
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-green-600">KSh {parseFloat(s.amount).toLocaleString()}</span>
@@ -1291,7 +1287,7 @@ export default function Admin({ onNavigate }) {
                             <span>
                               {sale.category === "vehicle" && sale.vehicleServiceType}
                               {sale.category === "motorbike" && sale.motorbikeServiceType}
-                              {sale.category === "carpet" && sale.carpetServiceType}
+                              {sale.category === "carpet" && sale.size}
                             </span>
                             {/* Return status badge for carpets */}
                             {sale.category === 'carpet' && (
@@ -1987,17 +1983,6 @@ export default function Admin({ onNavigate }) {
                                   />
                                 </div>
                               )}
-                              {selectedServiceCategory === 'carpet' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.carpetServiceType}
-                                    onChange={(e) => setEditForm({ ...editForm, carpetServiceType: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                  />
-                                </div>
-                              )}
 
                               {/* Amount */}
                               <div>
@@ -2092,7 +2077,7 @@ export default function Admin({ onNavigate }) {
                                   <span className="break-words">
                                     {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
                                     {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
-                                    {selectedServiceCategory === 'carpet' && sale.carpetServiceType}
+                                    {selectedServiceCategory === 'carpet' && sale.size}
                                   </span>
                                   {/* Return status badge for carpets */}
                                   {selectedServiceCategory === 'carpet' && (

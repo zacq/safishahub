@@ -375,7 +375,7 @@ export default function Autodetailing({ onNavigate }) {
                     >
                       <option value="">Select Size</option>
                       <option value="8x11">8×11 Carpet</option>
-                      <option value="6x10">6×10 Carpet</option>
+                      <option value="7x10">7×10 Carpet</option>
                       <option value="5x7">5×7 Carpet</option>
                       <option value="rug">Rug</option>
                     </select>
@@ -583,7 +583,7 @@ export default function Autodetailing({ onNavigate }) {
                               >
                                 <option value="">Select Size</option>
                                 <option value="8x11">8×11 Carpet</option>
-                                <option value="6x10">6×10 Carpet</option>
+                                <option value="7x10">7×10 Carpet</option>
                                 <option value="5x7">5×7 Carpet</option>
                                 <option value="rug">Rug</option>
                               </select>

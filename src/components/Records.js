@@ -25,7 +25,6 @@ export default function Records({ onNavigate }) {
     size: "",
     vehicleServiceType: [],
     motorbikeServiceType: [],
-    carpetServiceType: [],
     carpetImages: []
   });
 
@@ -36,16 +35,13 @@ export default function Records({ onNavigate }) {
   const [motorbikeServiceTypes, setMotorbikeServiceTypes] = useState([
     "Basic Wash", "Deep Clean", "Polish", "Chain Lubrication", "Full Detail", "Engine Clean"
   ]);
-  const [carpetServiceTypes, setCarpetServiceTypes] = useState([
-    "Deep Clean", "Stain Removal", "Dry Cleaning", "Steam Cleaning", "Odor Removal", "Scotchgard Protection"
-  ]);
 
-  // Carpet/Rug sizes
+  // Carpet/Rug sizes with fixed prices
   const carpetSizes = [
-    { label: "8×11 Carpet", value: "8x11" },
-    { label: "6×10 Carpet", value: "6x10" },
-    { label: "5×7 Carpet",  value: "5x7"  },
-    { label: "Rug",         value: "rug"  },
+    { label: "8×11 Carpet", value: "8x11", price: 1300 },
+    { label: "7×10 Carpet", value: "7x10", price: 900  },
+    { label: "5×7 Carpet",  value: "5x7",  price: 600  },
+    { label: "Rug",         value: "rug",  price: null  },
   ];
 
   // Load sales from Supabase
@@ -65,7 +61,6 @@ export default function Records({ onNavigate }) {
       }, {});
       if (byCategory.vehicle?.length) setVehicleServiceTypes(byCategory.vehicle);
       if (byCategory.motorbike?.length) setMotorbikeServiceTypes(byCategory.motorbike);
-      if (byCategory.carpet?.length) setCarpetServiceTypes(byCategory.carpet);
     });
   }, []);
 
@@ -115,7 +110,7 @@ export default function Records({ onNavigate }) {
 
   // Build WhatsApp receipt URL for a sale
   const getWhatsAppReceiptUrl = (sale, customerPhone) => {
-    const services = [sale.vehicle_service_type, sale.motorbike_service_type, sale.carpet_service_type].filter(Boolean).join(', ');
+    const services = [sale.vehicle_service_type, sale.motorbike_service_type].filter(Boolean).join(', ');
     const detail = sale.vehicle_model || (sale.number_of_motorbikes ? `${sale.number_of_motorbikes} motorbike(s)` : '') || (sale.size ? `${sale.size} carpet` : '');
     const mpesa = sale.mpesa_ref ? `\nM-Pesa Ref: ${sale.mpesa_ref}` : '';
     const msg = `*Safisha Hub Receipt*\n📅 ${sale.date}\n🧽 ${sale.service_type}${detail ? ` – ${detail}` : ''}${services ? `\n   Services: ${services}` : ''}\n💰 KSh ${parseFloat(sale.amount).toLocaleString()} (${sale.payment_method})${mpesa}\n\nThank you for choosing Safisha Hub! 🚗✨`;
@@ -159,7 +154,6 @@ export default function Records({ onNavigate }) {
     size: "",
     vehicleServiceType: [],
     motorbikeServiceType: [],
-    carpetServiceType: [],
     carpetImages: []
   });
 
@@ -206,7 +200,6 @@ export default function Records({ onNavigate }) {
         size: form.size || null,
         vehicle_service_type: form.vehicleServiceType.length > 0 ? form.vehicleServiceType.join(', ') : null,
         motorbike_service_type: form.motorbikeServiceType.length > 0 ? form.motorbikeServiceType.join(', ') : null,
-        carpet_service_type: form.carpetServiceType.length > 0 ? form.carpetServiceType.join(', ') : null,
         carpet_images: form.carpetImages.length > 0 ? form.carpetImages : null
       };
 
@@ -662,36 +655,15 @@ export default function Records({ onNavigate }) {
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Carpet Service Type * (Select all that apply)
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
-                          {carpetServiceTypes.map((service) => (
-                            <label key={service} className="flex items-center gap-2 p-3 sm:p-2 hover:bg-white rounded cursor-pointer transition-colors min-h-[44px]">
-                              <input
-                                type="checkbox"
-                                checked={form.carpetServiceType.includes(service)}
-                                onChange={() => handleServiceTypeCheckbox('carpetServiceType', service)}
-                                className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
-                              />
-                              <span className="text-sm text-gray-700">{service}</span>
-                            </label>
-                          ))}
-                        </div>
-                        {form.carpetServiceType.length > 0 && (
-                          <div className="mt-2 text-sm text-blue-600 break-words">
-                            ✓ Selected: {form.carpetServiceType.join(', ')}
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Size *
                         </label>
                         <select
                           name="size"
                           value={form.size}
-                          onChange={handleChange}
+                          onChange={(e) => {
+                            const sz = carpetSizes.find(s => s.value === e.target.value);
+                            setForm(f => ({ ...f, size: e.target.value, price: sz?.price ?? f.price }));
+                          }}
                           className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
                           required
                         >
@@ -1024,7 +996,6 @@ export default function Records({ onNavigate }) {
                                   🧽 {sale.service_type}
                                   {sale.category === 'vehicle' && sale.vehicle_service_type && ` • ${sale.vehicle_service_type}`}
                                   {sale.category === 'motorbike' && sale.motorbike_service_type && ` • ${sale.motorbike_service_type}`}
-                                  {sale.category === 'carpet' && sale.carpet_service_type && ` • ${sale.carpet_service_type}`}
                                 </div>
 
                                 <div className="text-sm text-gray-600">

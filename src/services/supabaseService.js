@@ -19,7 +19,6 @@ const transformSaleFromDB = (sale) => {
     vehicleServiceType: sale.vehicle_service_type,
     motorbikeServiceType: sale.motorbike_service_type,
     numberOfMotorbikes: sale.number_of_motorbikes,
-    carpetServiceType: sale.carpet_service_type,
     carpetImages: sale.carpet_images || [],
     paymentMethod: sale.payment_method,
     serviceType: sale.service_type,
