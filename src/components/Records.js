@@ -662,7 +662,7 @@ export default function Records({ onNavigate }) {
                           value={form.size}
                           onChange={(e) => {
                             const sz = carpetSizes.find(s => s.value === e.target.value);
-                            setForm(f => ({ ...f, size: e.target.value, price: sz?.price ?? f.price }));
+                            setForm(f => ({ ...f, size: e.target.value, price: sz?.price ?? 0 }));
                           }}
                           className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
                           required
@@ -683,22 +683,28 @@ export default function Records({ onNavigate }) {
                         recordId={null}
                       />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price (KSh) *
-                        </label>
-                        <input
-                          type="number"
-                          name="price"
-                          value={form.price}
-                          onChange={handleChange}
-                          placeholder="0"
-                          min="0"
-                          step="0.01"
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                          required
-                        />
-                      </div>
+                      {form.size === 'rug' ? (
+                        <div className="p-3 bg-green-50 border-2 border-green-300 rounded-lg text-center">
+                          <span className="text-green-700 font-semibold text-lg">Bonus</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Price (KSh) *
+                          </label>
+                          <input
+                            type="number"
+                            name="price"
+                            value={form.price}
+                            onChange={handleChange}
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                            required
+                          />
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
