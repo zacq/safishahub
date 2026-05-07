@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { salesService, employeesService, servicesService } from "../services/supabaseService";
+import CarpetImageUploader from "./CarpetImageUploader";
 
 export default function Records({ onNavigate }) {
   const [sales, setSales] = useState([]);
@@ -24,7 +25,8 @@ export default function Records({ onNavigate }) {
     size: "",
     vehicleServiceType: [],
     motorbikeServiceType: [],
-    carpetServiceType: []
+    carpetServiceType: [],
+    carpetImages: []
   });
 
   // Service type lists — loaded from Supabase, fallback to hardcoded
@@ -40,15 +42,10 @@ export default function Records({ onNavigate }) {
 
   // Carpet/Rug sizes
   const carpetSizes = [
-    "3x5",
-    "4x6",
-    "5x7",
-    "6x9",
-    "8x10",
-    "9x12",
-    "10x14",
-    "12x15",
-    "Custom Size"
+    { label: "8×11 Carpet", value: "8x11" },
+    { label: "6×10 Carpet", value: "6x10" },
+    { label: "5×7 Carpet",  value: "5x7"  },
+    { label: "Rug",         value: "rug"  },
   ];
 
   // Load sales from Supabase
@@ -162,7 +159,8 @@ export default function Records({ onNavigate }) {
     size: "",
     vehicleServiceType: [],
     motorbikeServiceType: [],
-    carpetServiceType: []
+    carpetServiceType: [],
+    carpetImages: []
   });
 
   // Handle employee selection
@@ -208,7 +206,8 @@ export default function Records({ onNavigate }) {
         size: form.size || null,
         vehicle_service_type: form.vehicleServiceType.length > 0 ? form.vehicleServiceType.join(', ') : null,
         motorbike_service_type: form.motorbikeServiceType.length > 0 ? form.motorbikeServiceType.join(', ') : null,
-        carpet_service_type: form.carpetServiceType.length > 0 ? form.carpetServiceType.join(', ') : null
+        carpet_service_type: form.carpetServiceType.length > 0 ? form.carpetServiceType.join(', ') : null,
+        carpet_images: form.carpetImages.length > 0 ? form.carpetImages : null
       };
 
       const savedSale = await salesService.create(newSale);
@@ -698,12 +697,19 @@ export default function Records({ onNavigate }) {
                         >
                           <option value="">Select Size</option>
                           {carpetSizes.map((size) => (
-                            <option key={size} value={size}>
-                              {size}
+                            <option key={size.value} value={size.value}>
+                              {size.label}
                             </option>
                           ))}
                         </select>
                       </div>
+
+                      <CarpetImageUploader
+                        images={form.carpetImages}
+                        onChange={(paths) => setForm(f => ({ ...f, carpetImages: paths }))}
+                        context="sales"
+                        recordId={null}
+                      />
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1024,6 +1030,15 @@ export default function Records({ onNavigate }) {
                                 <div className="text-sm text-gray-600">
                                   📅 {new Date(sale.date).toLocaleDateString()}
                                 </div>
+                                {sale.category === 'carpet' && sale.carpet_images && sale.carpet_images.length > 0 && (
+                                  <CarpetImageUploader
+                                    images={sale.carpet_images}
+                                    onChange={() => {}}
+                                    context="sales"
+                                    recordId={sale.id}
+                                    disabled
+                                  />
+                                )}
                               </div>
                             </div>
 

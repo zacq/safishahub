@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../config/supabase';
+import imageCompression from 'browser-image-compression';
 
 /**
  * Supabase Service Layer
@@ -19,6 +20,7 @@ const transformSaleFromDB = (sale) => {
     motorbikeServiceType: sale.motorbike_service_type,
     numberOfMotorbikes: sale.number_of_motorbikes,
     carpetServiceType: sale.carpet_service_type,
+    carpetImages: sale.carpet_images || [],
     paymentMethod: sale.payment_method,
     serviceType: sale.service_type,
     createdAt: sale.created_at
@@ -564,6 +566,91 @@ export const servicesService = {
 
     return data;
   }
+};
+
+// ==================== CARPET IMAGES ====================
+
+const CARPET_BUCKET = 'carpet-images';
+
+const compressionOptions = {
+  maxSizeMB: 0.5,
+  maxWidthOrHeight: 1920,
+  useWebWorker: true,
+  fileType: 'image/webp',
+};
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+const MAX_RAW_MB = 5;
+
+export const carpetImagesService = {
+  // Upload one image; returns the storage path string
+  async upload(file, context, recordId) {
+    if (!isSupabaseConfigured() || !supabase) {
+      throw new Error('Supabase not configured — image upload unavailable');
+    }
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Invalid file type. Allowed: JPG, PNG, WebP');
+    }
+
+    if (file.size > MAX_RAW_MB * 1024 * 1024) {
+      throw new Error(`File too large (max ${MAX_RAW_MB}MB before compression)`);
+    }
+
+    const compressed = await imageCompression(file, compressionOptions);
+    const ext = 'webp';
+    const folder = context === 'sales' ? 'sales' : 'leads';
+    const id = recordId || `tmp-${Date.now()}`;
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const path = `${folder}/${id}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from(CARPET_BUCKET)
+      .upload(path, compressed, { contentType: 'image/webp', upsert: false });
+
+    if (error) {
+      console.error('Error uploading carpet image:', error);
+      throw error;
+    }
+
+    return path;
+  },
+
+  // Get a 1-hour signed URL for a storage path
+  async getSignedUrl(path) {
+    if (!isSupabaseConfigured() || !supabase) return null;
+
+    const { data, error } = await supabase.storage
+      .from(CARPET_BUCKET)
+      .createSignedUrl(path, 3600);
+
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      return null;
+    }
+
+    return data.signedUrl;
+  },
+
+  // Get signed URLs for an array of paths
+  async getSignedUrls(paths) {
+    if (!paths || paths.length === 0) return [];
+    return Promise.all(paths.map((p) => this.getSignedUrl(p)));
+  },
+
+  // Delete a single image by storage path
+  async remove(path) {
+    if (!isSupabaseConfigured() || !supabase) return;
+
+    const { error } = await supabase.storage
+      .from(CARPET_BUCKET)
+      .remove([path]);
+
+    if (error) {
+      console.error('Error removing carpet image:', error);
+      throw error;
+    }
+  },
 };
 
 // ==================== LEADS ====================

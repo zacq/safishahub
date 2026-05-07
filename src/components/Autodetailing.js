@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { leadsService } from "../services/supabaseService";
+import CarpetImageUploader from "./CarpetImageUploader";
 
 export default function Autodetailing({ onNavigate }) {
   const [entries, setEntries] = useState([]);
@@ -15,6 +16,7 @@ export default function Autodetailing({ onNavigate }) {
     motorbikeModel: "",
     carpetType: "",
     carpetSize: "",
+    carpetImages: [],
     customerName: "",
     customerPhone: "",
     customerNeeds: ""
@@ -68,6 +70,7 @@ export default function Autodetailing({ onNavigate }) {
       } else if (assetType === 'carpet') {
         leadData.carpet_type = form.carpetType;
         leadData.carpet_size = form.carpetSize;
+        if (form.carpetImages.length > 0) leadData.carpet_images = form.carpetImages;
       }
 
       // Add customer needs
@@ -89,6 +92,7 @@ export default function Autodetailing({ onNavigate }) {
         motorbikeModel: "",
         carpetType: "",
         carpetSize: "",
+        carpetImages: [],
         customerName: "",
         customerPhone: "",
         customerNeeds: ""
@@ -370,12 +374,19 @@ export default function Autodetailing({ onNavigate }) {
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
                     >
                       <option value="">Select Size</option>
-                      <option value="Small (up to 6x4 ft)">Small (up to 6x4 ft)</option>
-                      <option value="Medium (6x4 to 9x6 ft)">Medium (6x4 to 9x6 ft)</option>
-                      <option value="Large (9x6 to 12x9 ft)">Large (9x6 to 12x9 ft)</option>
-                      <option value="Extra Large (12x9+ ft)">Extra Large (12x9+ ft)</option>
+                      <option value="8x11">8×11 Carpet</option>
+                      <option value="6x10">6×10 Carpet</option>
+                      <option value="5x7">5×7 Carpet</option>
+                      <option value="rug">Rug</option>
                     </select>
                   </div>
+
+                  <CarpetImageUploader
+                    images={form.carpetImages}
+                    onChange={(paths) => setForm(f => ({ ...f, carpetImages: paths }))}
+                    context="leads"
+                    recordId={null}
+                  />
                 </>
               )}
 
@@ -571,10 +582,10 @@ export default function Autodetailing({ onNavigate }) {
                                 className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none text-sm"
                               >
                                 <option value="">Select Size</option>
-                                <option value="Small (up to 6x4 ft)">Small (up to 6x4 ft)</option>
-                                <option value="Medium (6x4 to 9x6 ft)">Medium (6x4 to 9x6 ft)</option>
-                                <option value="Large (9x6 to 12x9 ft)">Large (9x6 to 12x9 ft)</option>
-                                <option value="Extra Large (12x9+ ft)">Extra Large (12x9+ ft)</option>
+                                <option value="8x11">8×11 Carpet</option>
+                                <option value="6x10">6×10 Carpet</option>
+                                <option value="5x7">5×7 Carpet</option>
+                                <option value="rug">Rug</option>
                               </select>
                             </div>
                           </>
@@ -663,13 +674,24 @@ export default function Autodetailing({ onNavigate }) {
                             </div>
                           )}
                           {entry.asset_type === 'carpet' && (
-                            <div className="flex items-center gap-3">
-                              <div className="text-gray-700 font-medium">
-                                {entry.carpet_type}
+                            <div>
+                              <div className="flex items-center gap-3 mb-1">
+                                <div className="text-gray-700 font-medium">
+                                  {entry.carpet_type}
+                                </div>
+                                <div className="text-gray-500 text-sm">
+                                  📏 {entry.carpet_size}
+                                </div>
                               </div>
-                              <div className="text-gray-500 text-sm">
-                                📏 {entry.carpet_size}
-                              </div>
+                              {entry.carpet_images && entry.carpet_images.length > 0 && (
+                                <CarpetImageUploader
+                                  images={entry.carpet_images}
+                                  onChange={() => {}}
+                                  context="leads"
+                                  recordId={entry.id}
+                                  disabled
+                                />
+                              )}
                             </div>
                           )}
                         </div>
