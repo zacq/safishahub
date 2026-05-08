@@ -1830,364 +1830,257 @@ export default function Admin({ onNavigate }) {
 
         {/* Sales History Modal */}
         {showSalesHistory && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 sm:p-6">
-                <div className="flex items-start justify-between mb-3 sm:mb-4">
-                  <div className="flex-1 pr-2">
-                    <h2 className="text-base sm:text-2xl font-bold leading-tight">
-                      {selectedServiceCategory === 'vehicle' && '🚗 Vehicle Wash Sales History'}
-                      {selectedServiceCategory === 'motorbike' && '🏍️ Motorbike Wash Sales History'}
-                      {selectedServiceCategory === 'carpet' && '🧺 Carpet/Rug Wash Sales History'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-purple-100 mt-1">
-                      {selectedEmployee !== 'all' ? `Employee: ${selectedEmployee}` : 'All Employees'}
-                    </p>
-                  </div>
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+
+              {/* Compact Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-bold tracking-wide">
+                    {selectedServiceCategory === 'vehicle' && '🚗 Vehicle Wash'}
+                    {selectedServiceCategory === 'motorbike' && '🏍️ Motorbike Wash'}
+                    {selectedServiceCategory === 'carpet' && '🧺 Carpet/Rug Wash'}
+                    <span className="font-normal text-purple-200 ml-2">
+                      · {selectedEmployee !== 'all' ? selectedEmployee : 'All Employees'}
+                    </span>
+                  </h2>
                   <button
-                    onClick={() => {
-                      setShowSalesHistory(false);
-                      setEditingSale(null);
-                      setEditForm({});
-                    }}
-                    className="text-white hover:text-gray-200 text-2xl sm:text-3xl font-bold flex-shrink-0"
+                    onClick={() => { setShowSalesHistory(false); setEditingSale(null); setEditForm({}); }}
+                    className="text-white hover:text-purple-200 text-xl font-bold leading-none transition-colors"
                   >
                     ×
                   </button>
                 </div>
 
-                {/* Date/Period Filter Controls */}
-                <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4 mt-3 sm:mt-4">
-                  {/* Period Selector */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-purple-100 mb-2">View Period</label>
-                    <div className="grid grid-cols-4 gap-1 sm:gap-2">
+                {/* Period + Date in one row */}
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {['day','week','month','year'].map(p => (
                       <button
-                        onClick={() => setHistoryFilterPeriod('day')}
-                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
-                          historyFilterPeriod === 'day'
-                            ? 'bg-white text-purple-600'
-                            : 'bg-purple-500 text-white hover:bg-purple-400'
+                        key={p}
+                        onClick={() => setHistoryFilterPeriod(p)}
+                        className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
+                          historyFilterPeriod === p ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
                         }`}
                       >
-                        Day
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
                       </button>
-                      <button
-                        onClick={() => setHistoryFilterPeriod('week')}
-                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
-                          historyFilterPeriod === 'week'
-                            ? 'bg-white text-purple-600'
-                            : 'bg-purple-500 text-white hover:bg-purple-400'
-                        }`}
-                      >
-                        Week
-                      </button>
-                      <button
-                        onClick={() => setHistoryFilterPeriod('month')}
-                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
-                          historyFilterPeriod === 'month'
-                            ? 'bg-white text-purple-600'
-                            : 'bg-purple-500 text-white hover:bg-purple-400'
-                        }`}
-                      >
-                        Month
-                      </button>
-                      <button
-                        onClick={() => setHistoryFilterPeriod('year')}
-                        className={`px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-base font-semibold transition-colors ${
-                          historyFilterPeriod === 'year'
-                            ? 'bg-white text-purple-600'
-                            : 'bg-purple-500 text-white hover:bg-purple-400'
-                        }`}
-                      >
-                        Year
-                      </button>
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Date Picker */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-purple-100 mb-2">
-                      Select {historyFilterPeriod === 'day' ? 'Date' : historyFilterPeriod === 'week' ? 'Week (any day)' : historyFilterPeriod === 'month' ? 'Month (any day)' : 'Year (any day)'}
-                    </label>
-                    <input
-                      type="date"
-                      value={historyFilterDate}
-                      onChange={(e) => setHistoryFilterDate(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-white"
-                    />
-                  </div>
-                </div>
-
-                {/* Display selected date range */}
-                <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-purple-100">
-                  {(() => {
-                    const { startDate, endDate } = getDateRangeForPeriod(historyFilterPeriod, historyFilterDate);
-                    if (startDate === endDate) {
-                      return `📅 Showing: ${startDate}`;
-                    } else {
-                      return `📅 Showing: ${startDate} to ${endDate}`;
-                    }
-                  })()}
+                  <input
+                    type="date"
+                    value={historyFilterDate}
+                    onChange={(e) => setHistoryFilterDate(e.target.value)}
+                    className="flex-1 px-2 py-1 rounded text-xs text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-white"
+                  />
+                  <span className="text-xs text-purple-200 whitespace-nowrap hidden sm:block">
+                    {(() => {
+                      const { startDate, endDate } = getDateRangeForPeriod(historyFilterPeriod, historyFilterDate);
+                      return startDate === endDate ? startDate : `${startDate} → ${endDate}`;
+                    })()}
+                  </span>
                 </div>
               </div>
 
-              {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-3">
                 {getServiceSales().length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="text-4xl sm:text-6xl mb-4">📊</div>
-                    <p className="text-base sm:text-lg">No sales records found</p>
-                    <p className="text-xs sm:text-sm">Try adjusting your filters</p>
+                  <div className="text-center py-10 text-gray-400">
+                    <div className="text-4xl mb-2">📊</div>
+                    <p className="text-sm">No records found — try a different period</p>
                   </div>
                 ) : (
-                  <div className="space-y-4 sm:space-y-6">
+                  <div className="space-y-3">
                     {getGroupedSalesByEmployee().map(([employeeName, employeeSales]) => (
-                      <div key={employeeName} className="space-y-2 sm:space-y-3">
-                        {/* Employee Header */}
-                        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg shadow-md z-10">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                              <span className="text-xl sm:text-2xl flex-shrink-0">👨‍🔧</span>
-                              <div className="min-w-0 flex-1">
-                                <h3 className="font-bold text-sm sm:text-lg truncate">{employeeName}</h3>
-                                <p className="text-xs sm:text-sm text-indigo-100">
-                                  {employeeSales.length} {employeeSales.length === 1 ? 'sale' : 'sales'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <div className="text-xs text-indigo-200 hidden sm:block">Total Revenue</div>
-                              <div className="text-sm sm:text-xl font-bold">
-                                KSh {employeeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
+                      <div key={employeeName}>
+                        {/* Compact employee header */}
+                        <div className="sticky top-0 flex items-center justify-between bg-gray-800 text-white px-3 py-1.5 rounded-lg z-10 mb-1">
+                          <span className="text-xs font-semibold tracking-wide">
+                            👨‍🔧 {employeeName}
+                            <span className="text-gray-400 font-normal ml-1.5">
+                              {employeeSales.length} {employeeSales.length === 1 ? 'sale' : 'sales'}
+                            </span>
+                          </span>
+                          <span className="text-xs font-bold text-green-400">
+                            KSh {employeeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
+                          </span>
                         </div>
 
-                        {/* Employee's Sales */}
-                        {employeeSales.map((sale) => (
-                          <div key={sale.id} className="border-2 border-gray-200 rounded-lg p-3 sm:p-4 hover:border-purple-300 transition-colors ml-2 sm:ml-4">
-                        {editingSale === sale.id ? (
-                          /* Edit Mode */
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {/* Vehicle type + add-ons */}
-                              {selectedServiceCategory === 'vehicle' && (
-                                <>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Vehicle Type</label>
-                                    <select
-                                      value={editForm.vehicleModel}
-                                      onChange={(e) => setEditForm({ ...editForm, vehicleModel: e.target.value })}
-                                      className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                    >
-                                      <option value="">Select Type</option>
-                                      {VEHICLE_TYPES.map(vt => (
-                                        <option key={vt.value} value={vt.value}>{vt.label}</option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Add-Ons</label>
-                                    <div className="flex flex-col gap-1">
-                                      {VEHICLE_ADD_ONS.map(addon => (
-                                        <label key={addon.value} className="flex items-center gap-2 text-sm">
+                        {/* Sale rows */}
+                        <div className="space-y-1 ml-1">
+                          {employeeSales.map((sale) => (
+                            <div key={sale.id} className="border border-gray-200 rounded-lg hover:border-purple-300 transition-colors overflow-hidden">
+                              {editingSale === sale.id ? (
+                                /* Edit Mode */
+                                <div className="p-3 space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {selectedServiceCategory === 'vehicle' && (
+                                      <>
+                                        <div>
+                                          <label className="block text-xs text-gray-500 mb-0.5">Vehicle Type</label>
+                                          <select
+                                            value={editForm.vehicleModel}
+                                            onChange={(e) => setEditForm({ ...editForm, vehicleModel: e.target.value })}
+                                            className="w-full p-1.5 text-xs border border-gray-200 rounded focus:border-purple-400 focus:outline-none"
+                                          >
+                                            <option value="">Select Type</option>
+                                            {VEHICLE_TYPES.map(vt => (
+                                              <option key={vt.value} value={vt.value}>{vt.label}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs text-gray-500 mb-0.5">Add-Ons</label>
+                                          <div className="flex flex-col gap-0.5">
+                                            {VEHICLE_ADD_ONS.map(addon => (
+                                              <label key={addon.value} className="flex items-center gap-1 text-xs">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={editForm.vehicleServiceType.includes(addon.value)}
+                                                  onChange={() => {
+                                                    const updated = editForm.vehicleServiceType.includes(addon.value)
+                                                      ? editForm.vehicleServiceType.filter(s => s !== addon.value)
+                                                      : [...editForm.vehicleServiceType, addon.value];
+                                                    setEditForm({ ...editForm, vehicleServiceType: updated });
+                                                  }}
+                                                />
+                                                {addon.label}
+                                              </label>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {selectedServiceCategory === 'motorbike' && (
+                                      <>
+                                        <div>
+                                          <label className="block text-xs text-gray-500 mb-0.5">Service Type</label>
                                           <input
-                                            type="checkbox"
-                                            checked={editForm.vehicleServiceType.includes(addon.value)}
-                                            onChange={() => {
-                                              const updated = editForm.vehicleServiceType.includes(addon.value)
-                                                ? editForm.vehicleServiceType.filter(s => s !== addon.value)
-                                                : [...editForm.vehicleServiceType, addon.value];
-                                              setEditForm({ ...editForm, vehicleServiceType: updated });
-                                            }}
+                                            type="text"
+                                            value={editForm.motorbikeServiceType}
+                                            onChange={(e) => setEditForm({ ...editForm, motorbikeServiceType: e.target.value })}
+                                            className="w-full p-1.5 text-xs border border-gray-200 rounded focus:border-purple-400 focus:outline-none"
                                           />
-                                          {addon.label} (+KSh {addon.price})
-                                        </label>
-                                      ))}
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs text-gray-500 mb-0.5">Qty</label>
+                                          <input
+                                            type="number"
+                                            value={editForm.numberOfMotorbikes}
+                                            onChange={(e) => setEditForm({ ...editForm, numberOfMotorbikes: e.target.value })}
+                                            className="w-full p-1.5 text-xs border border-gray-200 rounded focus:border-purple-400 focus:outline-none"
+                                          />
+                                        </div>
+                                      </>
+                                    )}
+                                    {selectedServiceCategory === 'carpet' && (
+                                      <div>
+                                        <label className="block text-xs text-gray-500 mb-0.5">Size</label>
+                                        <input
+                                          type="text"
+                                          value={editForm.size}
+                                          onChange={(e) => setEditForm({ ...editForm, size: e.target.value })}
+                                          className="w-full p-1.5 text-xs border border-gray-200 rounded focus:border-purple-400 focus:outline-none"
+                                        />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Amount (KSh)</label>
+                                      <input
+                                        type="number"
+                                        value={editForm.amount}
+                                        onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                                        className="w-full p-1.5 text-xs border border-gray-200 rounded focus:border-purple-400 focus:outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Payment</label>
+                                      <select
+                                        value={editForm.paymentMethod}
+                                        onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
+                                        className="w-full p-1.5 text-xs border border-gray-200 rounded focus:border-purple-400 focus:outline-none"
+                                      >
+                                        <option value="Cash">Cash</option>
+                                        <option value="M-Pesa">M-Pesa</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                      </select>
                                     </div>
                                   </div>
-                                </>
-                              )}
-                              {selectedServiceCategory === 'motorbike' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.motorbikeServiceType}
-                                    onChange={(e) => setEditForm({ ...editForm, motorbikeServiceType: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                  />
+                                  <div className="flex gap-2 justify-end pt-1">
+                                    <button onClick={cancelEditSale} className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">Cancel</button>
+                                    <button onClick={() => saveEditedSale(sale.id)} className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-semibold">Save</button>
+                                  </div>
                                 </div>
-                              )}
-
-                              {/* Amount */}
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Amount (KSh)</label>
-                                <input
-                                  type="number"
-                                  value={editForm.amount}
-                                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
-                                  className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Payment Method */}
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Payment Method</label>
-                                <select
-                                  value={editForm.paymentMethod}
-                                  onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
-                                  className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                >
-                                  <option value="Cash">Cash</option>
-                                  <option value="M-Pesa">M-Pesa</option>
-                                  <option value="Card">Card</option>
-                                  <option value="Bank Transfer">Bank Transfer</option>
-                                </select>
-                              </div>
-
-                              {/* Additional fields based on category */}
-                              {selectedServiceCategory === 'motorbike' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Number of Motorbikes</label>
-                                  <input
-                                    type="number"
-                                    value={editForm.numberOfMotorbikes}
-                                    onChange={(e) => setEditForm({ ...editForm, numberOfMotorbikes: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                  />
-                                </div>
-                              )}
-                              {selectedServiceCategory === 'carpet' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Size</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.size}
-                                    onChange={(e) => setEditForm({ ...editForm, size: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                  />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-2 justify-end">
-                              <button
-                                onClick={cancelEditSale}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => saveEditedSale(sale.id)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                              >
-                                💾 Save Changes
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          /* View Mode */
-                          <div className="space-y-3">
-                            {/* Sale Info Section */}
-                            <div className="flex items-start gap-2 sm:gap-3">
-                              <span className="text-xl sm:text-2xl flex-shrink-0">
-                                {selectedServiceCategory === 'vehicle' && '🚗'}
-                                {selectedServiceCategory === 'motorbike' && '🏍️'}
-                                {selectedServiceCategory === 'carpet' && '🧺'}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-gray-800 text-sm sm:text-lg flex flex-wrap items-center gap-2">
-                                  <span className="break-words">
-                                    {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType}
-                                    {selectedServiceCategory === 'motorbike' && sale.motorbikeServiceType}
-                                    {selectedServiceCategory === 'carpet' && sale.size}
-                                  </span>
-                                  {/* Return status badge for carpets */}
-                                  {selectedServiceCategory === 'carpet' && (
-                                    sale.returned ? (
-                                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap">
-                                        ✅ Returned
+                              ) : (
+                                /* Compact View Row */
+                                <div className="flex items-center gap-2 px-3 py-2">
+                                  {/* Left: service info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-sm font-semibold text-gray-800">
+                                        {selectedServiceCategory === 'vehicle' && (sale.vehicleModel || '—')}
+                                        {selectedServiceCategory === 'motorbike' && (sale.motorbikeServiceType || '—')}
+                                        {selectedServiceCategory === 'carpet' && (sale.size || '—')}
                                       </span>
-                                    ) : (
-                                      <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full animate-pulse whitespace-nowrap">
-                                        🕐 At Car Wash
-                                      </span>
-                                    )
-                                  )}
+                                      {selectedServiceCategory === 'vehicle' && sale.vehicleServiceType && (
+                                        <span className="text-xs text-gray-400">+{sale.vehicleServiceType}</span>
+                                      )}
+                                      {selectedServiceCategory === 'carpet' && (
+                                        sale.returned
+                                          ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">Returned</span>
+                                          : <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">At wash</span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-0.5">
+                                      {sale.date} · {sale.paymentMethod}
+                                      {sale.mpesa_ref && <span className="ml-1 text-gray-400">({sale.mpesa_ref})</span>}
+                                    </div>
+                                  </div>
+
+                                  {/* Right: amount + actions */}
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-sm font-bold text-green-600 tabular-nums">
+                                      KSh {parseFloat(sale.amount).toLocaleString()}
+                                    </span>
+                                    <button
+                                      onClick={() => startEditSale(sale)}
+                                      className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors font-medium"
+                                    >
+                                      Edit
+                                    </button>
+                                    {selectedServiceCategory === 'carpet' && !sale.returned && (
+                                      <button
+                                        onClick={() => markCarpetAsReturned(sale.id)}
+                                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors font-medium"
+                                      >
+                                        Return
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => deleteSale(sale.id)}
+                                      className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors font-medium"
+                                    >
+                                      Del
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="text-xs sm:text-sm text-gray-600 mt-1">
-                                  {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Type: ${sale.vehicleModel}`}
-                                  {selectedServiceCategory === 'motorbike' && sale.numberOfMotorbikes && `Qty: ${sale.numberOfMotorbikes}`}
-                                  {selectedServiceCategory === 'carpet' && sale.size && `Size: ${sale.size}`}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Details Grid */}
-                            <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm text-gray-600">
-                              <div className="truncate">👤 {sale.employee}</div>
-                              <div className="truncate">💳 {sale.paymentMethod}</div>
-                              <div>📅 {sale.date}</div>
-                              <div>🕐 {formatTimeOnly(sale.timestamp)}</div>
-                            </div>
-
-                            {/* Amount Display */}
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-                              <div className="text-xs sm:text-sm text-green-700 font-medium">Total Revenue</div>
-                              <div className="text-xl sm:text-2xl font-bold text-green-600">
-                                KSh {parseFloat(sale.amount).toLocaleString()}
-                              </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => startEditSale(sale)}
-                                className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-colors"
-                              >
-                                ✏️ Edit
-                              </button>
-                              {/* Mark as Returned button - only for carpets */}
-                              {selectedServiceCategory === 'carpet' && !sale.returned && (
-                                <button
-                                  onClick={() => markCarpetAsReturned(sale.id)}
-                                  className="flex-1 min-w-[140px] px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors"
-                                >
-                                  ✅ Mark as Returned
-                                </button>
                               )}
-                              <button
-                                onClick={() => deleteSale(sale.id)}
-                                className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-700 transition-colors"
-                              >
-                                🗑️ Delete
-                              </button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Modal Footer */}
-              <div className="bg-gray-50 p-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
-                    Total Records: <span className="font-semibold">{getServiceSales().length}</span>
-                  </div>
-                  <div className="text-lg font-bold text-green-600">
-                    Total Revenue: KSh {getServiceSales().reduce((sum, sale) => sum + (parseFloat(sale.amount) || 0), 0).toLocaleString()}
-                  </div>
-                </div>
+              {/* Compact Footer */}
+              <div className="flex justify-between items-center px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500">
+                <span>{getServiceSales().length} records</span>
+                <span className="font-bold text-green-600 text-sm">
+                  KSh {getServiceSales().reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0).toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
