@@ -43,8 +43,8 @@ Six tables — no others. `customers` and `inventory` were dropped (empty, lefto
 | `amount` | numeric | KSh |
 | `payment_method` | text | Cash / M-Pesa / Card / Bank Transfer |
 | `mpesa_ref` | text | nullable |
-| `vehicle_model` | text | nullable |
-| `vehicle_service_type` | text | comma-separated |
+| `vehicle_model` | text | vehicle type category: Saloon / Crossover / SUV / Medium Lorry / Large Lorry |
+| `vehicle_service_type` | text | add-ons: Engine Wash / Vacuum Interior (comma-separated) |
 | `motorbike_service_type` | text | comma-separated |
 | `number_of_motorbikes` | integer | nullable |
 | `size` | text | carpet size (`8x11`, `7x10`, `5x7`, `rug`) |

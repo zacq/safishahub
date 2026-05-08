@@ -3,6 +3,19 @@ import { employeesService, expensesService, salesService, notesService } from '.
 import { supabase } from '../config/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+const VEHICLE_TYPES = [
+  { label: "Saloon Car",       value: "Saloon",       price: 200 },
+  { label: "Crossover",        value: "Crossover",    price: 250 },
+  { label: "SUV",              value: "SUV",          price: 300 },
+  { label: "Medium Lorry/Bus", value: "Medium Lorry", price: 500 },
+  { label: "Large Lorry/Bus",  value: "Large Lorry",  price: 800 },
+];
+
+const VEHICLE_ADD_ONS = [
+  { label: "Engine Wash",     value: "Engine Wash",     price: 300 },
+  { label: "Vacuum Interior", value: "Vacuum Interior", price: 500 },
+];
+
 export default function Admin({ onNavigate }) {
   const [adminData, setAdminData] = useState({
     expenses: [],
@@ -640,7 +653,7 @@ export default function Admin({ onNavigate }) {
     setEditingSale(sale.id);
     setEditForm({
       amount: sale.amount,
-      vehicleServiceType: sale.vehicleServiceType || '',
+      vehicleServiceType: (sale.vehicleServiceType || '').split(', ').filter(Boolean),
       motorbikeServiceType: sale.motorbikeServiceType || '',
       vehicleModel: sale.vehicleModel || '',
       numberOfMotorbikes: sale.numberOfMotorbikes || '',
@@ -670,7 +683,7 @@ export default function Admin({ onNavigate }) {
 
       // Add service-specific fields with snake_case
       if (selectedServiceCategory === 'vehicle') {
-        updateData.vehicle_service_type = editForm.vehicleServiceType;
+        updateData.vehicle_service_type = editForm.vehicleServiceType.join(', ') || null;
         if (editForm.vehicleModel) updateData.vehicle_model = editForm.vehicleModel;
       } else if (selectedServiceCategory === 'motorbike') {
         updateData.motorbike_service_type = editForm.motorbikeServiceType;
@@ -693,7 +706,7 @@ export default function Admin({ onNavigate }) {
       };
 
       if (selectedServiceCategory === 'vehicle') {
-        localUpdateData.vehicleServiceType = editForm.vehicleServiceType;
+        localUpdateData.vehicleServiceType = editForm.vehicleServiceType.join(', ') || null;
         if (editForm.vehicleModel) localUpdateData.vehicleModel = editForm.vehicleModel;
       } else if (selectedServiceCategory === 'motorbike') {
         localUpdateData.motorbikeServiceType = editForm.motorbikeServiceType;
@@ -1960,17 +1973,43 @@ export default function Admin({ onNavigate }) {
                           /* Edit Mode */
                           <div className="space-y-3">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {/* Service Type */}
+                              {/* Vehicle type + add-ons */}
                               {selectedServiceCategory === 'vehicle' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.vehicleServiceType}
-                                    onChange={(e) => setEditForm({ ...editForm, vehicleServiceType: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                  />
-                                </div>
+                                <>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Vehicle Type</label>
+                                    <select
+                                      value={editForm.vehicleModel}
+                                      onChange={(e) => setEditForm({ ...editForm, vehicleModel: e.target.value })}
+                                      className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                                    >
+                                      <option value="">Select Type</option>
+                                      {VEHICLE_TYPES.map(vt => (
+                                        <option key={vt.value} value={vt.value}>{vt.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Add-Ons</label>
+                                    <div className="flex flex-col gap-1">
+                                      {VEHICLE_ADD_ONS.map(addon => (
+                                        <label key={addon.value} className="flex items-center gap-2 text-sm">
+                                          <input
+                                            type="checkbox"
+                                            checked={editForm.vehicleServiceType.includes(addon.value)}
+                                            onChange={() => {
+                                              const updated = editForm.vehicleServiceType.includes(addon.value)
+                                                ? editForm.vehicleServiceType.filter(s => s !== addon.value)
+                                                : [...editForm.vehicleServiceType, addon.value];
+                                              setEditForm({ ...editForm, vehicleServiceType: updated });
+                                            }}
+                                          />
+                                          {addon.label} (+KSh {addon.price})
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </>
                               )}
                               {selectedServiceCategory === 'motorbike' && (
                                 <div>
@@ -2011,17 +2050,6 @@ export default function Admin({ onNavigate }) {
                               </div>
 
                               {/* Additional fields based on category */}
-                              {selectedServiceCategory === 'vehicle' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Vehicle Model</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.vehicleModel}
-                                    onChange={(e) => setEditForm({ ...editForm, vehicleModel: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                                  />
-                                </div>
-                              )}
                               {selectedServiceCategory === 'motorbike' && (
                                 <div>
                                   <label className="block text-xs font-medium text-gray-700 mb-1">Number of Motorbikes</label>
@@ -2093,7 +2121,7 @@ export default function Admin({ onNavigate }) {
                                   )}
                                 </div>
                                 <div className="text-xs sm:text-sm text-gray-600 mt-1">
-                                  {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Model: ${sale.vehicleModel}`}
+                                  {selectedServiceCategory === 'vehicle' && sale.vehicleModel && `Type: ${sale.vehicleModel}`}
                                   {selectedServiceCategory === 'motorbike' && sale.numberOfMotorbikes && `Qty: ${sale.numberOfMotorbikes}`}
                                   {selectedServiceCategory === 'carpet' && sale.size && `Size: ${sale.size}`}
                                 </div>

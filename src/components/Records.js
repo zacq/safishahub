@@ -28,10 +28,30 @@ export default function Records({ onNavigate }) {
     carpetImages: []
   });
 
+  // Vehicle types with fixed base prices
+  const vehicleTypes = [
+    { label: "Saloon Car",       value: "Saloon",        price: 200 },
+    { label: "Crossover",        value: "Crossover",     price: 250 },
+    { label: "SUV",              value: "SUV",           price: 300 },
+    { label: "Medium Lorry/Bus", value: "Medium Lorry",  price: 500 },
+    { label: "Large Lorry/Bus",  value: "Large Lorry",   price: 800 },
+  ];
+
+  // Vehicle add-on services with fixed prices
+  const vehicleAddOns = [
+    { label: "Engine Wash",     value: "Engine Wash",     price: 300 },
+    { label: "Vacuum Interior", value: "Vacuum Interior", price: 500 },
+  ];
+
+  const calcVehiclePrice = (type, addOns) => {
+    const base = vehicleTypes.find(v => v.value === type)?.price || 0;
+    const extras = vehicleAddOns
+      .filter(a => addOns.includes(a.value))
+      .reduce((sum, a) => sum + a.price, 0);
+    return base + extras;
+  };
+
   // Service type lists — loaded from Supabase, fallback to hardcoded
-  const [vehicleServiceTypes, setVehicleServiceTypes] = useState([
-    "Exterior Wash", "Interior Clean", "Full Detail", "Vacuum", "Buffing", "Waxing", "Polish"
-  ]);
   const [motorbikeServiceTypes, setMotorbikeServiceTypes] = useState([
     "Basic Wash", "Deep Clean", "Polish", "Chain Lubrication", "Full Detail", "Engine Clean"
   ]);
@@ -59,7 +79,6 @@ export default function Records({ onNavigate }) {
         acc[s.category].push(s.name);
         return acc;
       }, {});
-      if (byCategory.vehicle?.length) setVehicleServiceTypes(byCategory.vehicle);
       if (byCategory.motorbike?.length) setMotorbikeServiceTypes(byCategory.motorbike);
     });
   }, []);
@@ -531,41 +550,48 @@ export default function Records({ onNavigate }) {
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Vehicle Service Type * (Select all that apply)
+                          Vehicle Type *
                         </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
-                          {vehicleServiceTypes.map((service) => (
-                            <label key={service} className="flex items-center gap-2 p-3 sm:p-2 hover:bg-white rounded cursor-pointer transition-colors min-h-[44px]">
-                              <input
-                                type="checkbox"
-                                checked={form.vehicleServiceType.includes(service)}
-                                onChange={() => handleServiceTypeCheckbox('vehicleServiceType', service)}
-                                className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
-                              />
-                              <span className="text-sm text-gray-700">{service}</span>
-                            </label>
+                        <select
+                          value={form.vehicleModel}
+                          onChange={(e) => {
+                            const updated = { ...form, vehicleModel: e.target.value, price: calcVehiclePrice(e.target.value, form.vehicleServiceType) };
+                            setForm(updated);
+                          }}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                          required
+                        >
+                          <option value="">Select Vehicle Type</option>
+                          {vehicleTypes.map(vt => (
+                            <option key={vt.value} value={vt.value}>
+                              {vt.label} — KSh {vt.price}
+                            </option>
                           ))}
-                        </div>
-                        {form.vehicleServiceType.length > 0 && (
-                          <div className="mt-2 text-sm text-blue-600 break-words">
-                            ✓ Selected: {form.vehicleServiceType.join(', ')}
-                          </div>
-                        )}
+                        </select>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Vehicle Model *
+                          Add-On Services
                         </label>
-                        <input
-                          type="text"
-                          name="vehicleModel"
-                          value={form.vehicleModel}
-                          onChange={handleChange}
-                          placeholder="e.g., Toyota Camry, Honda Civic"
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                          required
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border-2 border-gray-200 rounded-lg bg-gray-50">
+                          {vehicleAddOns.map((addon) => (
+                            <label key={addon.value} className="flex items-center gap-2 p-3 sm:p-2 hover:bg-white rounded cursor-pointer transition-colors min-h-[44px]">
+                              <input
+                                type="checkbox"
+                                checked={form.vehicleServiceType.includes(addon.value)}
+                                onChange={() => {
+                                  const updated = form.vehicleServiceType.includes(addon.value)
+                                    ? form.vehicleServiceType.filter(s => s !== addon.value)
+                                    : [...form.vehicleServiceType, addon.value];
+                                  setForm(f => ({ ...f, vehicleServiceType: updated, price: calcVehiclePrice(f.vehicleModel, updated) }));
+                                }}
+                                className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
+                              />
+                              <span className="text-sm text-gray-700">{addon.label} <span className="text-gray-400">(+KSh {addon.price})</span></span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
 
                       <div>
