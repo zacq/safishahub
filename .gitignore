@@ -22,3 +22,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# reference skill packs
+/Taste-skill--Front-Ends--main/
+/Taste-skill--Front-Ends--main.zip
+/andrej-karpathy-skills-main/
+/andrej-karpathy-skills-main.zip
