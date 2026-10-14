@@ -1283,59 +1283,6 @@ export default function Admin({ onNavigate }) {
             })()}
           </div>
 
-          {/* Recent Transactions */}
-          {analytics.filteredSales.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="font-semibold text-gray-800 mb-4">📝 Recent Transactions</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {analytics.filteredSales.slice(0, 10).map((sale) => (
-                  <div key={sale.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">
-                          {sale.category === "vehicle" ? "🚗" : sale.category === "motorbike" ? "🏍️" : "🧺"}
-                        </span>
-                        <div>
-                          <div className="font-medium text-gray-800 flex items-center gap-2">
-                            <span>
-                              {sale.category === "vehicle" && sale.vehicleServiceType}
-                              {sale.category === "motorbike" && sale.motorbikeServiceType}
-                              {sale.category === "carpet" && sale.size}
-                            </span>
-                            {/* Return status badge for carpets */}
-                            {sale.category === 'carpet' && (
-                              sale.returned ? (
-                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                  ✅ Returned
-                                </span>
-                              ) : (
-                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full animate-pulse">
-                                  🕐 At Car Wash
-                                </span>
-                              )
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {sale.employee} • {formatTimeOnly(sale.timestamp)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-green-600">KSh {parseFloat(sale.amount).toLocaleString()}</div>
-                      <div className="text-xs text-gray-500">{sale.paymentMethod}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {analytics.filteredSales.length > 10 && (
-                <div className="text-center text-sm text-gray-500 mt-3">
-                  ... and {analytics.filteredSales.length - 10} more transactions
-                </div>
-              )}
-            </div>
-          )}
-
           {analytics.filteredSales.length === 0 && (
             <div className="text-center py-12 text-gray-500">
               <div className="text-6xl mb-4">📊</div>

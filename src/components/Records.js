@@ -407,23 +407,33 @@ export default function Records({ onNavigate }) {
                   </button>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {employees.map((emp) => (
-                    <button
-                      key={emp.id}
-                      onClick={() => handleEmployeeSelect(emp.name)}
-                      className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl p-6 transition-all transform hover:scale-105 active:scale-95 shadow-lg text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-4xl">👨‍🔧</div>
-                        <div>
-                          <h3 className="text-xl font-bold">{emp.name}</h3>
-                          <p className="text-green-100 text-sm">📱 {emp.phone}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-gray-500 text-left">
+                      <th className="pb-2 w-8">#</th>
+                      <th className="pb-2">Name</th>
+                      <th className="pb-2">Phone</th>
+                      <th className="pb-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((emp, index) => (
+                      <tr key={emp.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="py-2 text-gray-400">{index + 1}</td>
+                        <td className="py-2 font-medium text-gray-800">{emp.name}</td>
+                        <td className="py-2 text-gray-500">{emp.phone}</td>
+                        <td className="py-2 text-right">
+                          <button
+                            onClick={() => handleEmployeeSelect(emp.name)}
+                            className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded-lg transition-colors"
+                          >
+                            Select
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           ) : !selectedServiceType ? (
