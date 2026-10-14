@@ -19,7 +19,11 @@ export default function Autodetailing({ onNavigate }) {
     carpetImages: [],
     customerName: "",
     customerPhone: "",
-    customerNeeds: ""
+    customerNeeds: "",
+    priority: "",
+    location: "",
+    budget: "",
+    nextFollowUp: ""
   });
 
   // Load leads from Supabase
@@ -75,6 +79,10 @@ export default function Autodetailing({ onNavigate }) {
 
       // Add customer needs
       leadData.customer_needs = form.customerNeeds;
+      leadData.priority = form.priority || null;
+      leadData.location = form.location || null;
+      leadData.budget = form.budget ? Number(form.budget) : null;
+      leadData.next_follow_up = form.nextFollowUp || null;
 
       console.log('💾 Autodetailing: Saving lead to Supabase...', leadData);
 
@@ -95,7 +103,11 @@ export default function Autodetailing({ onNavigate }) {
         carpetImages: [],
         customerName: "",
         customerPhone: "",
-        customerNeeds: ""
+        customerNeeds: "",
+        priority: "",
+        location: "",
+        budget: "",
+        nextFollowUp: ""
       });
 
       setShowSuccess(true);
@@ -416,6 +428,69 @@ export default function Autodetailing({ onNavigate }) {
                   value={form.customerPhone}
                   onChange={handleChange}
                   placeholder="e.g., 0712345678"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Priority */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Priority
+                </label>
+                <select
+                  name="priority"
+                  value={form.priority}
+                  onChange={handleChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                >
+                  <option value="">Select Priority</option>
+                  <option value="Hot">Hot</option>
+                  <option value="Warm">Warm</option>
+                  <option value="Cold">Cold</option>
+                </select>
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  placeholder="e.g., Karen, Westlands"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Budget */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Budget (KES)
+                </label>
+                <input
+                  type="number"
+                  name="budget"
+                  value={form.budget}
+                  onChange={handleChange}
+                  placeholder="e.g., 15000"
+                  min="0"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Next Follow-up */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Next Follow-up
+                </label>
+                <input
+                  type="date"
+                  name="nextFollowUp"
+                  value={form.nextFollowUp}
+                  onChange={handleChange}
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none"
                 />
               </div>
